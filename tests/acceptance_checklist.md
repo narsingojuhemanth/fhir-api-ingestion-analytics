@@ -1,51 +1,43 @@
 # Assessment Acceptance Checklist
 
-Use this checklist for end-to-end validation before submitting.
-
-## Setup / cleanup safety
-- [ ] Run `nb_00_setup_cleanup` only manually if a clean reset is needed; verify the explicit confirmation token before destructive reset.
-- [ ] Never add `nb_00_setup_cleanup` to `pl_fhir_assessment`.
-- [ ] Startup cell only drops legacy prefixed tables when matching schema-based replacement exists.
-
-## Source/API
-- [ ] HAPI FHIR R4 used.
-- [ ] Patient, Encounter, Observation, and Condition each return successful searchset Bundles.
+## Environment and source
+- [ ] Fabric workspace and schema-enabled Lakehouse created.
+- [ ] HAPI FHIR R4 API is used.
+- [ ] Patient, Encounter, Observation, and Condition each return valid searchset Bundles.
 - [ ] Pagination follows server-provided `next` URLs.
-- [ ] Incremental filter `_lastUpdated=ge...` tested for all four resources.
-- [ ] Successful data ingestion evidence retained for 2–3 days (separate successful runs).
 
-## Raw
-- [ ] Original successful API response body saved without parsing/re-serializing.
-- [ ] Path is bucketed by resource and extraction date.
-- [ ] Each run has a unique run ID folder.
-- [ ] Page metadata sidecar records URL, API-call/extraction timestamp, save timestamp, status, entry count, and Raw path.
-- [ ] Failed/incomplete runs do not advance the source watermark.
+## Raw and Bronze
+- [ ] Incremental ingestion runs on separate days across the required 2–3-day period.
+- [ ] Original successful API response bodies are saved unchanged under date/resource/run folders.
+- [ ] Metadata sidecars are saved separately from response bodies.
+- [ ] Bronze Delta tables exist: `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, `bronze.Condition`.
+- [ ] Each Bronze table includes `extraction_timestamp` and `api_url_or_params`.
+- [ ] API-call time and saved time are persisted in the audit/sidecar metadata.
+- [ ] Resource IDs, payload JSON, and content hashes are populated.
+- [ ] Identical resource content versions do not create duplicate Bronze rows.
+- [ ] Audit and watermark tables exist and contain run evidence.
 
-## Bronze
-- [ ] Schema-based Delta tables: `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, `bronze.Condition`.
-- [ ] Required metadata columns `extraction_timestamp` and `api_url_or_params` present.
-- [ ] `source_last_updated` and content hash present.
-- [ ] Merge deduplicates identical resource content versions but permits changed hashes as new versions.
+## Silver and SCD Type 2
+- [ ] Silver Delta tables exist: `silver.Patient`, `silver.Encounter`, `silver.Observation`, `silver.Condition`.
+- [ ] Spark cleaning/deduplication is implemented; Dataflows Gen2 is not used for JSON-to-table conversion.
+- [ ] `valid_from`, `valid_to`, and `is_current` are present.
+- [ ] Each resource ID has exactly one current Silver version.
+- [ ] Historical intervals are valid.
+- [ ] A changed resource observed on a subsequent run is retained as a new version; the previous version is no longer current.
 
-## Silver / SCD Type 2
-- [ ] Spark cleaning/deduplication is implemented.
-- [ ] Schema-based tables exist: `silver.Patient`, `silver.Encounter`, `silver.Observation`, `silver.Condition`.
-- [ ] `valid_from`, `valid_to`, and `is_current` exist.
-- [ ] At most one current version per resource ID.
-- [ ] Changed resource content across observed loads produces multiple retained versions and closes the former current interval.
-
-## Gold / Warehouse
-- [ ] Schema-based Gold tables exist: `gold.Patient`, `gold.Encounter`, `gold.Observation`, `gold.Condition`.
-- [ ] Gold keys are non-null and unique; important field population checked.
+## Gold and Warehouse views
+- [ ] Gold Delta tables exist: `gold.Patient`, `gold.Encounter`, `gold.Observation`, `gold.Condition`.
+- [ ] Gold resource IDs are non-null and unique.
 - [ ] Warehouse `wh_fhir_assignment` exists.
-- [ ] Warehouse views `dbo.vw_Patient`, `dbo.vw_Encounter`, `dbo.vw_Observation`, `dbo.vw_Condition` query successfully against Lakehouse Gold via three-part naming.
+- [ ] Views `dbo.vw_Patient`, `dbo.vw_Encounter`, `dbo.vw_Observation`, and `dbo.vw_Condition` execute successfully.
 
 ## Orchestration and submission
-- [ ] Fabric pipeline activities enforce Patient → Encounter → Observation → Condition.
-- [ ] Silver runs only after all ingestion activities succeed.
-- [ ] Gold runs only after Silver succeeds.
-- [ ] Pipeline/table lineage and runbook documented.
-- [ ] Fabric notebook sources `nb_00` through `nb_04` exported/present in `notebooks/`.
-- [ ] GitHub contains code/docs only—no raw payloads or secrets.
-- [ ] ZIP backup exported and verified.
-- [ ] Optional XML and Power BI extensions considered only after mandatory criteria pass.
+- [ ] Pipeline activities are linked in exact order: Patient → Encounter → Observation → Condition → Silver → Gold.
+- [ ] Pipeline succeeds end-to-end.
+- [ ] Pipeline/table relationships and setup steps are documented.
+- [ ] GitHub repository or ZIP includes notebooks, SQL, pipeline setup, validation, and docs.
+- [ ] The repository contains no credentials, raw payloads, or extracted datasets.
+
+## Optional only
+- [ ] XML ingestion.
+- [ ] One-page Power BI report using Gold.
