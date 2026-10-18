@@ -31,6 +31,7 @@ The configuration cell in `nb_01_fhir_ingestion` must be tagged as the notebook 
 - `overlap_minutes = 5`
 - `max_pages = 1000`
 - `request_format = "json"`
+- `cleanup_legacy_tables = True` (safe legacy cleanup; it drops only old prefixed duplicates when schema-based replacements exist)
 - `cleanup_legacy_tables = True`
 
 The pipeline should override `resource_type` in each ingestion activity. The other parameters may use their defaults. If adding pipeline-level parameters, pass all of them explicitly to every ingestion activity.
