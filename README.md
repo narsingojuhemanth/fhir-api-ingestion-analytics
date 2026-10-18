@@ -42,7 +42,7 @@ Microsoft Fabric assessment project using the public HAPI FHIR R4 API.
 6. In the ingestion notebook, verify its first configuration cell is marked as the Notebook parameter cell.
 7. Run `pl_fhir_assessment`. Activities must run in order: Patient → Encounter → Observation → Condition → Silver SCD Type 2 → Gold tables.
 8. Run `nb_04_validation` and inspect the full result.
-9. In `wh_fhir_assignment`, add the `lh_fhir_assignment` SQL analytics endpoint via **+ Warehouses** and execute `warehouse/create_gold_views.sql`. The views reference Lakehouse Gold tables directly; no duplicate Gold Copy Data activities are needed.
+9. In `wh_fhir_assignment`, add the `lh_fhir_assignment` SQL analytics endpoint via **+ Warehouses** and execute each view definition in `warehouse/create_gold_views.sql`. The views reference Lakehouse Gold tables directly; no duplicate Gold Copy Data activities are needed. If views already exist and you are intentionally recreating them, run `warehouse/drop_gold_views.sql` first.
 10. Re-run the pipeline on separate days for the required 2–3-day evidence and validate SCD Type 2 behavior when an updated resource is observed. Keep successful audit/run evidence.
 
 See `notebooks/README.md` and `pipelines/fabric_pipeline_setup.md` for the complete instructions.
