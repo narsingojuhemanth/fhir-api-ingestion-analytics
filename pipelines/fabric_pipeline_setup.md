@@ -48,8 +48,9 @@ Create or update Fabric Data Pipeline `pl_fhir_assessment`. Add Notebook activit
 | 4 | `Ingest_Condition` | `nb_01_fhir_ingestion` | `resource_type = Condition` |
 | 5 | `Transform_Silver_SCD2` | `nb_02_silver_scd2` | none |
 | 6 | `Build_Gold_Tables` | `nb_03_gold_analytics` | none |
+| 7 | `Validate_End_To_End` | `nb_04_validation` | `RAISE_ON_FAILURE = True` |
 
-Link each activity to the next using the green **On success** dependency. Keep the first four resource activities in the prescribed order. Do not add `nb_00_setup_cleanup` to this pipeline.
+Link each activity to the next using the green **On success** dependency. Keep the first four resource activities in the prescribed order. The final validation activity is a project quality guard; set `RAISE_ON_FAILURE = True` so failed quality checks fail the pipeline. Do not add `nb_00_setup_cleanup` to this pipeline.
 
 ## Table layout
 
