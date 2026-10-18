@@ -35,7 +35,7 @@ Raw directory structure is bucketed by resource type, extraction date, and run I
 | Column | Meaning |
 |---|---|
 | `resource_type` | Resource-specific checkpoint |
-| `last_successful_source_updated_utc` | Maximum source `meta.lastUpdated` timestamp observed in a completed run |
+| `last_successful_source_updated_utc` | Maximum source `meta.lastUpdated` timestamp observed in a completed run; if the completed scan returns no resources, the watermark advances conservatively to run start minus overlap |
 | `last_successful_run_id` | Run that saved the checkpoint |
 | `watermark_updated_at_utc` | UTC timestamp when the watermark was written |
 
