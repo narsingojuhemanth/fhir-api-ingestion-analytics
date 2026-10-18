@@ -11,7 +11,7 @@
 - [ ] Original successful API response bodies are saved unchanged under date/resource/run folders.
 - [ ] Metadata sidecars are saved separately from response bodies.
 - [ ] Bronze Delta tables exist: `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, `bronze.Condition`.
-- [ ] Each Bronze table includes `extraction_timestamp` and `api_url_or_params`.
+- [ ] Each Bronze, Silver, and Gold table includes `extraction_timestamp` and `api_url_or_params`.
 - [ ] API-call time and saved time are persisted in the audit/sidecar metadata.
 - [ ] Resource IDs, payload JSON, and content hashes are populated.
 - [ ] Identical resource content versions do not create duplicate Bronze rows.
