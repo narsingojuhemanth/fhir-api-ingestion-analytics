@@ -18,7 +18,7 @@ The API returns FHIR searchset Bundles. Each Bundle can contain multiple resourc
 2. **Bronze** — one Delta table per resource stores each distinct observed resource content version, a canonical JSON representation, a SHA-256 content hash, the original Raw file path, extraction metadata, and run ID.
 3. **Silver** — Spark filters malformed rows, deduplicates identical content versions, and builds SCD Type 2 validity intervals from source `meta.lastUpdated` when available.
 4. **Gold** — Spark parses commonly used resource fields into analytics-friendly current-state Delta tables.
-5. **Warehouse** — a Fabric Data Pipeline copies the four Gold tables into `wh_fhir_assignment`; SQL views expose the final reporting surfaces.
+5. **Warehouse** — `wh_fhir_assignment` exposes SQL views over the Lakehouse Gold tables using same-workspace three-part naming. The Gold data stays in the Lakehouse; it is not copied into a second set of Warehouse tables.
 
 ## Raw folder structure
 
