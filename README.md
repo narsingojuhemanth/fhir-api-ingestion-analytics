@@ -8,8 +8,8 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] Microsoft Fabric selected.
 - [x] Workspace: `ws_fhir_assessment`.
 - [x] Lakehouse: `lh_fhir_assignment`.
-- [x] Spark notebook smoke test passed.
-- [x] GitHub repository and documentation scaffold created.
+- [x] Spark environment smoke test passed.
+- [x] GitHub repository and project scaffold created.
 - [x] Connectivity checked for Patient, Encounter, Observation, and Condition.
 - [x] Patient pagination tested by following the server-provided `next` link.
 - [x] First-page `_lastUpdated=ge...` filter test passed for all four resource endpoints.
@@ -19,18 +19,21 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] Silver SCD Type 2 transformation notebook source added.
 - [x] Gold analytics table notebook source added.
 - [x] Warehouse SQL views script added.
-- [x] Architecture, data dictionary, lineage, and pipeline setup documentation added.
-- [x] Validation queries and acceptance checklist added.
-- [ ] Import notebooks into Fabric and attach the Lakehouse.
-- [ ] Run ingestion successfully for each resource.
-- [ ] Validate audit and watermark tables in Fabric.
-- [ ] Validate Silver SCD Type 2 and Gold tables in Fabric.
+- [x] Architecture, data dictionary, lineage, pipeline setup, traceability matrix, and validation checklist added.
+
+### Fabric runtime progress
+- [x] Ingestion notebook imported and attached to `lh_fhir_assignment`.
+- [x] Patient incremental ingestion completed in Fabric: run `20261018T091904061761Z`, 8 pages saved, 711 resources observed, Raw files saved, Bronze table `bronze_fhir_patient`, audit table and watermark table created.
+- [ ] Validate persisted Patient Bronze metadata, audit rows, and watermark.
+- [ ] Run and validate ingestion for Encounter, Observation, and Condition.
+- [ ] Run and validate Silver SCD Type 2.
+- [ ] Run and validate Gold analytics tables.
 - [ ] Create `wh_fhir_assignment`, copy Gold tables, and create Warehouse views.
 - [ ] Create and run `pl_fhir_assessment` end-to-end.
 - [ ] Retain successful run evidence across 2–3 days.
 - [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
 
-**Important:** Notebook source and setup documentation are committed, but the end-to-end implementation has not yet been executed or validated in the new Fabric workspace. Do not mark runtime requirements complete until those checks pass.
+**Important:** Source code and setup documentation are packaged in GitHub. The first Patient ingestion run succeeded, but its persisted tables still require verification. The full end-to-end implementation has not yet been executed or validated; do not mark remaining runtime requirements complete until those checks pass.
 
 ## Architecture
 
@@ -70,14 +73,14 @@ HAPI FHIR R4: https://hapi.fhir.org/baseR4/swagger-ui/
 
 - `notebooks/` — importable Jupyter notebook files for Fabric.
 - `warehouse/` — SQL to create final Warehouse views.
-- `docs/` — architecture, data dictionary, and lineage.
+- `docs/` — architecture, data dictionary, requirement traceability, and lineage.
 - `pipelines/` — Fabric Data Pipeline setup runbook.
 - `tests/` — validation queries and acceptance checklist.
-- `src/` — placeholder for additional reusable modules if implementation evolves beyond notebooks.
+- `src/` — placeholder for reusable modules if the implementation evolves beyond notebooks.
 
-## Important data handling
+## Data handling
 
-- Do not commit credentials, tokens, secrets, Raw response files, or extracted datasets.
+- Do not commit credentials, tokens, secrets, Raw payloads, or extracted datasets.
 - Keep project code and documentation in Git; keep runtime data in the Lakehouse/Warehouse.
-- The first incremental filter test checked only the first page for each resource. Full pagination and incremental behavior must be validated as part of pipeline runs.
-- XML ingestion and a one-page Power BI report are optional extensions after mandatory requirements pass.
+- The first incremental-filter test checked only the first page for each resource; full pagination and incremental behavior still need end-to-end validation.
+- XML ingestion and a one-page Power BI report are optional extensions after mandatory scope passes.
