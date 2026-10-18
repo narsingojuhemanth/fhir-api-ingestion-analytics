@@ -27,7 +27,7 @@ Microsoft Fabric assessment project using the public HAPI FHIR R4 API.
 - [x] Silver notebook executed and current-row uniqueness / validity-interval checks passed for the first load.
 - [x] Gold notebook executed and key uniqueness / field-population checks passed for the first load.
 - [x] The 12 schema-based Bronze/Silver/Gold copies were exactly compared with original prefixed tables; comparison passed.
-- [x] Warehouse and six-activity pipeline were created in the workspace.
+- [x] Warehouse and six-core-stage pipeline were created in the workspace; the updated runbook adds a final validation activity as a seventh stage.
 - [x] Schema-based notebook source, reset utility, validation notebook, view SQL, pipeline guide, data dictionary, and requirement traceability are committed here.
 
 **Deployment qualification:** The successful first run occurred before the updated schema-based notebook source and reset/startup cells were imported into the existing Fabric notebook items. The schema-based table copies were validated, but the updated clean-start package must still be imported and executed in Fabric. Do not treat a committed notebook as proof that its updated version has run successfully.
