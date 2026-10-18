@@ -1,41 +1,35 @@
 # Assignment Requirement Traceability
 
-This matrix maps the supplied *FHIR API Data Ingestion & Analytics Assignment* to the project implementation. “Packaged” means source/documentation exists in Git; “Runtime pending” means it must still be executed and evidenced in Fabric.
+This matrix follows the wording of the supplied three-page FHIR API Data Ingestion & Analytics Assignment.
 
-| Assignment requirement | Implementation location | Status |
+| Requirement from assignment | Project implementation | Final deployment evidence to collect |
 |---|---|---|
-| Use public HAPI FHIR R4 API | `notebooks/nb_01_fhir_ingestion.ipynb` | Packaged; basic API checks passed manually |
-| Ingest Patient | Ingestion notebook parameter `resource_type=Patient` | Runtime pending in clean workspace |
-| Ingest Encounter | Same parameterized ingestion notebook, pipeline activity overrides resource type | Runtime pending |
-| Ingest Observation | Same parameterized ingestion notebook, pipeline activity overrides resource type | Runtime pending |
-| Ingest Condition | Same parameterized ingestion notebook, pipeline activity overrides resource type | Runtime pending |
-| Spark notebook pagination | Ingestion notebook follows Bundle `next` URL and enforces `max_pages` safety limit | Packaged; Patient pagination test passed, full pipeline pending |
-| Incremental ingestion for 2–3 days | `_lastUpdated=ge...`, persisted per-resource watermark and overlap; see pipeline runbook | Code packaged; successful runs across 2–3 days pending |
-| Store original JSON/XML response as-is in Lakehouse | Successful response body written to Raw as bytes; JSON is required scope | JSON packaged; Fabric runtime pending; XML optional |
-| Convert responses to Delta/Parquet in Bronze | `bronze.<Resource>` Delta tables | Packaged; runtime pending |
-| Required metadata `extraction_timestamp`, `api_url_or_params` | Bronze schema and Raw sidecars | Packaged; runtime pending |
-| Track API-call and saved times | `dbo.fhir_ingestion_audit` and page metadata sidecars | Packaged; runtime pending |
-| Detect changes across loads | `content_hash` and Bronze Delta MERGE | Packaged; runtime pending |
-| Retain SCD Type 2 history | `notebooks/nb_02_silver_scd2.ipynb`, `valid_from`, `valid_to`, `is_current` | Packaged; actual version-change proof pending |
-| Raw date-bucketed and resource-organized folders | `Files/raw/fhir/resource=.../extraction_date=.../run_id=...` | Packaged; runtime pending |
-| Silver cleaning/deduplication | Silver notebook using Spark | Packaged; runtime pending |
-| Do not use Dataflows Gen2 for JSON-to-table conversion | JSON parsing and conversion are in Spark notebooks | Compliant by design |
-| Gold warehouse views optimized for reporting | Gold Delta tables and `warehouse/create_gold_views.sql` | Packaged; Warehouse views still need to be created and queried in Fabric |
-| Pipeline call order Patient → Encounter → Observation → Condition | `pipelines/fabric_pipeline_setup.md` | Setup instructions packaged; pipeline exists but needs updated notebook sources and an end-to-end run |
-| Orchestrate transformation, metadata logging and loading | Ingestion audit/watermark; Silver/Gold notebooks; SQL Warehouse views | Pipeline setup documented; end-to-end run pending |
-| Modular reusable code, no hardcoding | One parameterized ingestion notebook reused for all four resources | Packaged; runtime pending |
-| Submit all code and notebooks | GitHub repository and `notebooks/*.ipynb` | Source packaged |
-| Include pipeline setup | `pipelines/fabric_pipeline_setup.md` | Documentation packaged; live pipeline must be created in Fabric |
-| Document pipeline and table relationships | `docs/pipeline_table_relationships.md`, `docs/data_dictionary.md`, `docs/architecture.md` | Packaged |
-| Optional XML ingestion | Not implemented | Optional, defer until mandatory scope passes |
-| Optional one-page Power BI report | Not implemented | Optional, defer until mandatory scope passes |
+| Access to Fabric or Databricks | Microsoft Fabric workspace and schema-enabled Lakehouse | Workspace/Lakehouse exist |
+| Use public HAPI FHIR R4 API | Ingestion notebook calls the public baseR4 endpoints | Successful HTTP responses for all resources |
+| Ingest Patient, Encounter, Observation, Condition | Same parameterized ingestion notebook, called once per resource in pipeline | Audit shows successful runs for all four resource types |
+| Fetch incrementally for 2–3 days using pagination | Initial three-day lookback, persisted source watermark, overlap, server-provided next links | Successful pipeline runs on separate days and page/audit evidence |
+| Store JSON response as-is in Lakehouse | Original response bytes saved under Raw; metadata is in separate sidecar | Raw files exist by resource/date/run |
+| Convert API responses into Delta/Parquet in Bronze | One schema-based Bronze Delta table per resource | Four Bronze tables and counts |
+| Add extraction_timestamp and api_url_or_params | Both columns in Bronze and page metadata/audit | No null metadata values for successfully ingested resources |
+| Track when each API was called and when data was saved | Audit table and sidecar timestamps | Audit rows include call and save times |
+| Detect daily changes and preserve history with SCD Type 2 | Content hashes in Bronze; version history in Silver with valid_from, valid_to, is_current | Changed resource across runs has multiple Silver versions; exactly one is current |
+| Raw responses bucketed by date with folders for API objects | Resource/extraction-date/run-ID folder structure | Inspect Raw folders |
+| Silver cleaning and deduplication | Spark transformations in Silver notebook | Silver current-row and interval validation |
+| Dataflows Gen2 only for transformations, not JSON conversion | Spark performs JSON-to-table conversion; no Dataflows Gen2 used for parsing | Review notebook implementation |
+| Gold final Warehouse views optimized for reporting | Gold Delta tables plus Warehouse SQL views over Gold | Query all four Warehouse views |
+| Orchestrate Patient → Encounter → Observation → Condition | Six-stage Fabric Data Pipeline, with those four calls first | Pipeline dependency order and successful run |
+| Handle transformation, metadata logging, and data loading | Ingestion audit/watermark logging and Silver/Gold notebook stages | Pipeline run history and control tables |
+| Modular reusable code with no hardcoding | Parameterized ingestion notebook reused for all four resources | Four activity parameter settings |
+| Submit code, notebooks, pipeline setup | This repository | Repository link or ZIP |
+| Document pipeline and table relationships | Architecture, data dictionary, lineage, pipeline runbook | Check files under docs/ and pipelines/ |
 
-## Additional workspace setup artifacts
+## Optional extensions (not part of required scope)
 
-- The importable package includes `nb_00_setup_cleanup.ipynb`. It is guarded by a reset token and must be run manually only; it must never be placed in the daily pipeline.
-- The ingestion notebook has a safe bootstrap cell to ensure schemas exist and remove old prefixed tables only when matching schema-based replacements are present.
-- The validation notebook `nb_04_validation.ipynb` is read-only and produces cross-layer quality evidence.
+- XML ingestion in addition to JSON.
+- One-page Power BI report sourced from Gold.
 
-## What counts as completion
+These remain optional and should not delay the mandatory requirements.
 
-Do not treat source files alone as proof of end-to-end completion. Before submission, run `tests/acceptance_checklist.md`, capture successful Fabric pipeline runs, verify tables and Warehouse views, and retain audit evidence across the required 2–3-day period.
+## Acceptance condition
+
+Source code in GitHub is not proof of runtime success. Execute the updated notebooks in the new Fabric workspace, capture the pipeline and table validation output, retain successful run evidence across 2–3 days, and demonstrate historical versions when changed source content is observed.
