@@ -31,7 +31,8 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] Gold notebook executed; initial row counts match current Silver counts.
 - [x] Gold data-quality validation passed: zero missing IDs and zero duplicate IDs for all four tables. Field population samples were plausible (Patient gender 584/711; birth date 452/711; Encounter status 4,409/4,409 and patient reference 4,406/4,409; Observation status 4,702/4,707 and code 4,697/4,707; Condition clinical status 1,950/1,951 and code 1,943/1,951).
 - [ ] Demonstrate SCD Type 2 history across separate changed-resource loads.
-- [ ] Create `wh_fhir_assignment`, copy Gold tables, and create Warehouse views.
+- [x] Create Warehouse `wh_fhir_assignment`.
+- [ ] Copy all four Gold tables into `wh_fhir_assignment` and create Warehouse views.
 - [ ] Create and run `pl_fhir_assessment` end-to-end.
 - [ ] Retain successful run evidence across 2–3 days.
 - [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
