@@ -9,7 +9,7 @@
 
 Each resource has its own date-bucketed directory.
 
-## `fhir_ingestion_audit`
+## `dbo.fhir_ingestion_audit`
 
 | Column | Meaning |
 |---|---|
@@ -28,7 +28,7 @@ Each resource has its own date-bucketed directory.
 | `run_status` | Overall run status as recorded in the audit row |
 | `error_message` | Error details for failed attempts, when available |
 
-## `fhir_ingestion_watermarks`
+## `dbo.fhir_ingestion_watermarks`
 
 | Column | Meaning |
 |---|---|
