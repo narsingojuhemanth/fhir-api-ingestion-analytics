@@ -18,7 +18,7 @@ Optional extensions (not included in the required implementation): XML ingestion
 2. Create a new workspace, for example `ws_fhir_assessment`.
 3. Create a **schema-enabled** Lakehouse named `lh_fhir_assignment`. Keep Lakehouse schemas enabled.
 4. Create a Fabric Warehouse named `wh_fhir_assignment`.
-5. Download this repository from **Code → Download ZIP**.
+5. Download this repository from **Code → Download ZIP**. Optional preflight on your computer: from the extracted project root, run `python tests/validate_notebooks.py` to check notebook JSON and Python syntax.
 6. Import these notebooks into the workspace:
    - `notebooks/nb_01_fhir_ingestion.ipynb` → item name `nb_01_fhir_ingestion`
    - `notebooks/nb_02_silver_scd2.ipynb` → item name `nb_02_silver_scd2`
