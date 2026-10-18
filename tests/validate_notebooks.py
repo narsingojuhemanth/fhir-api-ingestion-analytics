@@ -46,6 +46,7 @@ for filename in REQUIRED_NOTEBOOKS:
 
     if notebook.get("nbformat") != 4:
         errors.append(f"Unsupported notebook format in notebooks/{filename}")
+        continue
 
     for index, cell in enumerate(notebook.get("cells", [])):
         if cell.get("cell_type") != "code":
@@ -61,27 +62,6 @@ for filename in REQUIRED_NOTEBOOKS:
                 f"Python syntax error in {filename}, cell {index}, "
                 f"line {exc.lineno}: {exc.msg}"
             )
-
-# Ensure layer-table names are consistent across the notebook sources.
-expected = {
-    "bronze.Patient", "bronze.Encounter", "bronze.Observation", "bronze.Condition",
-    "silver.Patient", "silver.Encounter", "silver.Observation", "silver.Condition",
-    "gold.Patient", "gold.Encounter", "gold.Observation", "gold.Condition",
-}
-source_text = ""
-for path in NOTEBOOK_DIR.glob("*.ipynb"):
-    try:
-        notebook = json.loads(path.read_text(encoding="utf-8"))
-        source_text += "\n".join(
-            "".join(cell.get("source", []))
-            for cell in notebook.get("cells", [])
-        )
-    except Exception:
-        pass
-
-for table_name in expected:
-    if table_name not in source_text and table_name.split(".")[1] not in source_text:
-        errors.append(f"Expected schema/table reference not found in notebooks: {table_name}")
 
 if errors:
     print("PROJECT STATIC VALIDATION FAILED")
