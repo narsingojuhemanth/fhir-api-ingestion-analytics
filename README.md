@@ -12,6 +12,7 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] GitHub repository and project scaffold created
 - [x] HAPI FHIR R4 connectivity checked for Patient, Encounter, Observation, and Condition
 - [x] Patient pagination tested by following the API-provided `next` link
+- [x] Initial `_lastUpdated=ge...` filter capability test passed for first pages of all four resources
 - [ ] Reusable ingestion for all four resources
 - [ ] Raw and Bronze layers
 - [ ] Incremental ingestion across 2–3 days and SCD Type 2 history
@@ -46,4 +47,5 @@ tests/                 # Validation queries and test evidence
 - Do not commit credentials, tokens, or secrets.
 - Do not commit raw FHIR payloads or other data extracts to this repository.
 - Keep Fabric runtime data in the Lakehouse; store code and documentation in Git.
+- The initial incremental-filter test checked only the first page per resource; full pagination/filter behavior still needs end-to-end validation.
 - Optional extensions after required scope: XML ingestion and a one-page Power BI report.
