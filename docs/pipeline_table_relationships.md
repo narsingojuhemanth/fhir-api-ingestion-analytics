@@ -14,8 +14,9 @@ Each Notebook activity calls `nb_01_fhir_ingestion` and overrides the `resource_
 After the four ingestion activities:
 5. `Transform_Silver_SCD2` runs `nb_02_silver_scd2`.
 6. `Build_Gold_Tables` runs `nb_03_gold_analytics`.
+7. `Validate_End_To_End` runs `nb_04_validation` with `RAISE_ON_FAILURE = True` so quality failures fail the pipeline.
 
-The Warehouse views are created once in `wh_fhir_assignment` using `warehouse/create_gold_views.sql`. They reference Lakehouse Gold tables via three-part names; no scheduled Gold-to-Warehouse table copy is required.
+The final validation activity is recommended after Gold to check Raw/sidecar presence, Bronze metadata, Silver SCD2 integrity, Gold keys, and audit/watermark tables. The Warehouse views are created once in `wh_fhir_assignment` using `warehouse/create_gold_views.sql`. They reference Lakehouse Gold tables via three-part names; no scheduled Gold-to-Warehouse table copy is required.
 
 ## Lineage
 
@@ -37,6 +38,7 @@ All resource ingestion activities also write:
 - Bronze tables are `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, and `bronze.Condition`.
 - Silver requires all four Bronze tables; run it only after all resource ingestion activities succeed.
 - Gold requires all four Silver tables; run it only after Silver succeeds.
+- End-to-end validation requires Raw, Bronze, Silver, Gold, audit, and watermark outputs; run it only after Gold succeeds.
 - Warehouse views require `wh_fhir_assignment` and the Lakehouse SQL analytics endpoint added in its object explorer.
 
 ## Warehouse view setup
