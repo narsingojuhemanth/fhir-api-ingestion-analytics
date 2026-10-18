@@ -26,20 +26,19 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] Encounter ingestion succeeded: run `20261018T092508103133Z`; 45 pages; 4,409 records observed.
 - [x] Observation ingestion succeeded: run `20261018T092626225986Z`; 48 pages; 4,707 records observed.
 - [x] Condition ingestion succeeded: run `20261018T092716409380Z`; 20 pages; 1,951 records observed.
-- [x] Bronze/audit/watermark validation passed for all four resources; required metadata fields have no nulls and successful audit rows/watermarks were verified.
+- [x] Bronze/audit/watermark validation passed for all four resources; required metadata fields have no nulls.
 - [x] Silver notebook executed successfully and created all four Silver tables.
-- [x] Initial Silver row counts match Bronze counts: Patient 711; Encounter 4,409; Observation 4,707; Condition 1,951.
-- [ ] Validate Silver current-row uniqueness and validity intervals.
-- [ ] Prove SCD Type 2 history with multiple observed versions after a changed-resource subsequent load or controlled test.
+- [x] Silver validation passed: every observed resource ID has exactly one current row; zero invalid intervals across all four resources.
+- [x] Initial load contained no resources with multiple observed versions. This is expected for a first load, but does not yet prove change history across separate daily loads.
 - [ ] Run and validate Gold analytics tables.
 - [ ] Create `wh_fhir_assignment`, copy Gold tables, and create Warehouse views.
 - [ ] Create and run `pl_fhir_assessment` end-to-end.
-- [ ] Retain successful run evidence across 2–3 days.
+- [ ] Retain successful run evidence across 2–3 days and demonstrate SCD Type 2 history across changed versions.
 - [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
 
-The first ingestion runs observed 11,778 resource entries across 121 Raw response pages. Initial Silver rebuilds returned one current row per ingested row; SCD2 historical change behavior still requires explicit validation.
+The first ingestion runs observed 11,778 resource entries across 121 Raw response pages. Silver initial version counts match the respective Bronze row counts: Patient 711; Encounter 4,409; Observation 4,707; Condition 1,951.
 
-**Important:** Notebook source and setup documentation are packaged in GitHub. Four resource ingestions, initial Bronze metadata validation, and Silver notebook execution have succeeded. End-to-end validation is still pending.
+**Important:** Source files are packaged in GitHub. Four resource ingestions, initial Bronze metadata validation, and Silver execution/quality checks have succeeded. End-to-end orchestration, Warehouse deployment, daily-run evidence, and a demonstrated changed-resource SCD2 history remain pending.
 
 ## Architecture
 
@@ -65,7 +64,7 @@ Fabric Warehouse: dbo.vw_gold_* reporting views
 
 ## Assignment requirements
 
-Use Spark notebooks to fetch data incrementally over 2–3 days using pagination. Preserve original JSON/XML API responses in date-bucketed, resource-specific Raw folders. Convert responses into Delta/Parquet in Bronze and capture `extraction_timestamp` and `api_url_or_params`. Track when each API was called and when data was saved. Detect changes between daily loads and retain historical versions using SCD Type 2.
+Use Spark notebooks to fetch data incrementally over 2–3 days using pagination. Preserve original JSON/XML API responses in date-bucketed, resource-specific Raw folders. Convert responses into Delta/Parquet in Bronze and capture `extraction_timestamp` and `api_url_or_params`. Track when each API is called and when data was saved. Detect changes between daily loads and retain historical versions using SCD Type 2.
 
 Build Raw → Bronze → Silver → Gold. In Silver, clean and deduplicate data using Spark or Dataflows Gen2. Dataflows Gen2 must not be used for JSON-to-table conversion. Gold should provide final warehouse views optimized for reporting and analytics.
 
