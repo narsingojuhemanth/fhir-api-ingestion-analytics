@@ -39,7 +39,7 @@ Each resource has its own date-bucketed directory.
 
 ## Bronze tables
 
-Tables: `bronze_fhir_patient`, `bronze_fhir_encounter`, `bronze_fhir_observation`, `bronze_fhir_condition`.
+Tables: `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, `bronze.Condition`.
 
 | Column | Meaning |
 |---|---|
@@ -58,7 +58,7 @@ Bronze MERGE key: `resource_type + resource_id + content_hash`. The table retain
 
 ## Silver tables
 
-Tables: `silver_fhir_patient`, `silver_fhir_encounter`, `silver_fhir_observation`, `silver_fhir_condition`.
+Tables: `silver.Patient`, `silver.Encounter`, `silver.Observation`, `silver.Condition`.
 
 Silver retains Bronze columns and adds:
 - `valid_from`: effective timestamp for the observed version.
@@ -68,15 +68,15 @@ Silver retains Bronze columns and adds:
 
 ## Gold tables
 
-Tables: `gold_fhir_patient`, `gold_fhir_encounter`, `gold_fhir_observation`, `gold_fhir_condition`.
+Tables: `gold.Patient`, `gold.Encounter`, `gold.Observation`, `gold.Condition`.
 
 Gold stores current-state analytical projections. See each output schema in `notebooks/nb_03_gold_analytics.ipynb`. Historical rows remain in Silver.
 
 ## Warehouse views
 
-- `dbo.vw_gold_patient`
-- `dbo.vw_gold_encounter`
-- `dbo.vw_gold_observation`
-- `dbo.vw_gold_condition`
+- `dbo.vw_Patient`
+- `dbo.vw_Encounter`
+- `dbo.vw_Observation`
+- `dbo.vw_Condition`
 
-Create them by running `warehouse/create_gold_views.sql` in the Fabric Warehouse after the Gold tables have been copied to it.
+Create them by running `warehouse/create_gold_views.sql` in `wh_fhir_assignment` after adding the Lakehouse SQL analytics endpoint to the Warehouse explorer. The views reference the Lakehouse Gold tables directly, without copying the Gold data.
