@@ -1,59 +1,87 @@
 # Fabric Data Pipeline Setup
 
-## One-time workspace items
+## Workspace assets
 
-In workspace `ws_fhir_assessment`, ensure these items exist:
-- Lakehouse: `lh_fhir_assignment`
-- Notebook: `nb_01_fhir_ingestion` (import from `notebooks/nb_01_fhir_ingestion.ipynb` or copy its cells)
-- Notebook: `nb_02_silver_scd2`
-- Notebook: `nb_03_gold_analytics`
+In workspace `ws_fhir_assessment`, ensure these assets exist:
+- Lakehouse: `lh_fhir_assignment` (schema-enabled)
+- One-time reset notebook: `nb_00_setup_cleanup` (manual only; never added to the pipeline)
+- Ingestion notebook: `nb_01_fhir_ingestion`
+- Silver notebook: `nb_02_silver_scd2`
+- Gold notebook: `nb_03_gold_analytics`
 - Warehouse: `wh_fhir_assignment`
 
-Attach `lh_fhir_assignment` as the default Lakehouse to each notebook. When importing notebooks, verify the first configuration code cell in the ingestion notebook is marked as the **parameter cell**. The parameter names and defaults are:
-- `resource_type` = `Patient`
-- `initial_lookback_days` = `3`
-- `page_size` = `100`
-- `overlap_minutes` = `5`
-- `max_pages` = `1000`
-- `request_format` = `json`
+Attach `lh_fhir_assignment` as the default Lakehouse to all notebooks. The reset notebook is a manual utility and is not a pipeline activity.
 
-Do not change `resource_type` in the source code between pipeline runs; override it using the Notebook activity's Base parameters.
+## Clean-start preparation (manual, one time only)
 
-## Create the pipeline
+If starting fresh in the dedicated assessment Lakehouse, import `notebooks/nb_00_setup_cleanup.ipynb`, attach `lh_fhir_assignment`, then set its parameters:
+- `CONFIRM_RESET = "RESET_FHIR_ASSESSMENT"`
+- `DELETE_RAW_FILES = True` to remove only `Files/raw/fhir` from this assessment Lakehouse (use `False` to preserve Raw files)
 
-Create a Fabric Data Pipeline named `pl_fhir_assessment`. Add Notebook activities connected by **On success** dependencies in this order:
+Run that notebook exactly once and verify the reset completion message. Then return `CONFIRM_RESET` to an empty string and save the notebook. Do not add the reset notebook to the pipeline: each pipeline run must preserve watermarks, incremental state, and SCD Type 2 history.
 
-| Activity | Notebook | Base parameters |
-|---|---|---|
-| `Ingest_Patient` | `nb_01_fhir_ingestion` | `resource_type = Patient`; other parameters use defaults or pipeline parameters |
-| `Ingest_Encounter` | `nb_01_fhir_ingestion` | `resource_type = Encounter` |
-| `Ingest_Observation` | `nb_01_fhir_ingestion` | `resource_type = Observation` |
-| `Ingest_Condition` | `nb_01_fhir_ingestion` | `resource_type = Condition` |
-| `Transform_Silver_SCD2` | `nb_02_silver_scd2` | none |
-| `Build_Gold_Tables` | `nb_03_gold_analytics` | none |
+The ingestion notebook also has a safe startup cell. It creates the `bronze`, `silver`, and `gold` schemas if absent. It removes old prefixed duplicate tables only when the corresponding schema-based replacement exists. It does not drop the current medallion tables, control tables, or Raw payloads.
 
-Link them sequentially with success dependencies through `Build_Gold_Tables`. If using pipeline parameters for page size, lookback, overlap, and safety limit, create them at the pipeline level and pass them as Base parameters to all four ingestion activity instances. Resource names are fixed per activity to preserve the assignment-required sequence; the ingestion logic itself is reusable.
+## Ingestion notebook parameters
 
-## Create Warehouse views over Gold
+The configuration cell in `nb_01_fhir_ingestion` must be tagged as the notebook parameter cell. Defaults:
+- `resource_type = "Patient"`
+- `initial_lookback_days = 3`
+- `page_size = 100`
+- `overlap_minutes = 5`
+- `max_pages = 1000`
+- `request_format = "json"`
+- `cleanup_legacy_tables = True`
 
-No Gold Copy Data activities are needed. The data remains in Lakehouse schema `gold`; the Warehouse provides SQL views over it.
+The pipeline should override `resource_type` in each ingestion activity. The other parameters may use their defaults. If adding pipeline-level parameters, pass all of them explicitly to every ingestion activity.
 
-## Create the SQL views
+## Create the orchestration pipeline
 
-In `wh_fhir_assignment`, add the Lakehouse SQL analytics endpoint `lh_fhir_assignment` using the SQL editor's **+ Warehouses** action, then execute `warehouse/create_gold_views.sql`. This creates `dbo.vw_Patient`, `dbo.vw_Encounter`, `dbo.vw_Observation`, and `dbo.vw_Condition`. The view script is a one-time deployment step; no copy activity is required.
+Create or update Fabric Data Pipeline `pl_fhir_assessment`. Add Notebook activities linked with **On success** dependencies in this exact order:
 
-## Executing the 2–3-day requirement
+| Sequence | Activity | Notebook | Base parameter override |
+|---:|---|---|---|
+| 1 | `Ingest_Patient` | `nb_01_fhir_ingestion` | `resource_type = Patient` |
+| 2 | `Ingest_Encounter` | `nb_01_fhir_ingestion` | `resource_type = Encounter` |
+| 3 | `Ingest_Observation` | `nb_01_fhir_ingestion` | `resource_type = Observation` |
+| 4 | `Ingest_Condition` | `nb_01_fhir_ingestion` | `resource_type = Condition` |
+| 5 | `Transform_Silver_SCD2` | `nb_02_silver_scd2` | none |
+| 6 | `Build_Gold_Tables` | `nb_03_gold_analytics` | none |
 
-1. Run the pipeline once. The first run uses a three-day source `_lastUpdated` lookback.
-2. Run it again on the following day, and again on a third day if schedule permits. The saved watermark plus overlap will drive subsequent incremental queries.
-3. Keep pipeline run details and query results from `fhir_ingestion_audit` showing separate successful run IDs/timestamps. The initial lookback alone is not evidence of separate daily runs.
+Link each activity to the next using the green **On success** dependency. Keep the first four resource activities in the prescribed order. Do not add `nb_00_setup_cleanup` to this pipeline.
 
-Do not advance a watermark after a partial pagination run. If the safety page limit is hit, increase `max_pages` and rerun; the notebook fails rather than marking the incomplete fetch successful.
+## Table layout
 
-## Schedule (optional operational step)
+The ingestion notebooks use these schema-qualified Lakehouse tables:
+- Bronze: `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, `bronze.Condition`
+- Silver: `silver.Patient`, `silver.Encounter`, `silver.Observation`, `silver.Condition`
+- Gold: `gold.Patient`, `gold.Encounter`, `gold.Observation`, `gold.Condition`
+- Control: `dbo.fhir_ingestion_audit`, `dbo.fhir_ingestion_watermarks`
 
-Once manual execution succeeds, configure a daily schedule if permitted. For assessment evidence, make sure the required 2–3 days of actual run history are retained.
+No Copy Data activities are required for Gold. The Gold tables remain in the Lakehouse; the Warehouse exposes direct SQL views over them. This avoids a duplicate Gold copy and is an implementation choice, not an explicit separate-copy requirement in the assignment brief.
 
-## Known platform UI variation
+## Create Warehouse views
 
-Fabric UI labels can vary. If import doesn't bind a notebook to the Lakehouse, attach `lh_fhir_assignment` manually. If the imported parameter tag is not recognized, select the configuration cell and mark it as the Notebook parameter cell in Fabric. Never commit Raw FHIR payloads to GitHub.
+After the Gold tables exist:
+1. Open `wh_fhir_assignment`.
+2. In Explorer, select **+ Warehouses** and add the SQL analytics endpoint for `lh_fhir_assignment`.
+3. Open a new SQL query and run each view definition in `warehouse/create_gold_views.sql`. The statements are separated by `GO`; Fabric's SQL query editor treats `GO` as a new batch.
+4. Validate each view with a small query, for example `SELECT TOP (20) * FROM dbo.vw_Patient;`.
+
+The views are `dbo.vw_Patient`, `dbo.vw_Encounter`, `dbo.vw_Observation`, and `dbo.vw_Condition`.
+
+## Required 2–3-day evidence
+
+1. Run the pipeline once after the clean start.
+2. Run again on the following day and again on a third day if feasible.
+3. Verify that separate successful run IDs/timestamps exist for all resource types in `dbo.fhir_ingestion_audit`.
+4. Verify the watermarks in `dbo.fhir_ingestion_watermarks`.
+5. If an updated resource is observed, verify Bronze stores a changed content hash and Silver retains both versions with one current version and a closed prior interval.
+
+A single initial three-day lookback is not evidence of successful ingestion on separate days. Do not advance a watermark after a failed or incomplete paginated run.
+
+## Source control and final submission
+
+Use the GitHub repository for source code and documentation; do not commit Raw payloads or credentials. Since Fabric GitHub integration was blocked in the assessment tenant, update existing notebook items in place to preserve pipeline references. If importing notebooks as new workspace items, update each pipeline activity to point to the new item.
+
+Follow `tests/acceptance_checklist.md` before delivery and include the project code, notebooks, pipeline recreation documentation, table lineage, and a ZIP backup.
