@@ -80,7 +80,7 @@ Required metadata:
 
 ## Incremental behavior
 
-On a resource's first run, use the configurable lookback (default three days) through `_lastUpdated=ge...`. On later runs, use the saved source watermark minus a configurable overlap (default five minutes). If a run finds no resources with a source update timestamp, retain the existing watermark rather than advancing it without evidence. A failed request, failed load, or pagination safety-limit failure must not be treated as a successful run.
+On a resource's first run, use the configurable lookback (default three days) through `_lastUpdated=ge...`. On later runs, use the saved source watermark minus a configurable overlap (default five minutes). If a completed scan returns no resources, advance conservatively to the scan start minus the configured overlap; the next run subtracts the overlap again. If resources are returned but lack source timestamps, retain the existing watermark. A failed request, failed load, or pagination safety-limit failure must not be treated as a successful run.
 
 The assessment requires successful ingestion across 2–3 separate days. Run the pipeline on separate days and keep audit/run evidence; the initial lookback alone is not sufficient.
 
