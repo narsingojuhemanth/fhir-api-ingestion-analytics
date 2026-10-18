@@ -1,46 +1,51 @@
 # FHIR API Ingestion & Analytics
 
-Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
+Microsoft Fabric assessment project using the public HAPI FHIR R4 API.
 
-## Current status
+## Project assets
 
-### Setup and source discovery
-- [x] Microsoft Fabric selected.
-- [x] Workspace: `ws_fhir_assessment`.
-- [x] Lakehouse: `lh_fhir_assignment`.
-- [x] Spark environment smoke test passed.
-- [x] GitHub repository and project scaffold created.
-- [x] Connectivity checked for Patient, Encounter, Observation, and Condition.
-- [x] Patient pagination tested by following the server-provided `next` link.
-- [x] First-page `_lastUpdated=ge...` filter test passed for all four resource endpoints.
+| Item | Purpose |
+|---|---|
+| Workspace | `ws_fhir_assessment` |
+| Lakehouse | `lh_fhir_assignment` |
+| Warehouse | `wh_fhir_assignment` |
+| Pipeline | `pl_fhir_assessment` |
+| Ingestion notebook | `nb_01_fhir_ingestion` |
+| Silver notebook | `nb_02_silver_scd2` |
+| Gold notebook | `nb_03_gold_analytics` |
+| Validation notebook | `nb_04_validation` |
+| One-time reset notebook | `nb_00_setup_cleanup` |
 
-### Implementation package
-- [x] Parameterized Raw + Bronze ingestion notebook source added.
-- [x] Silver SCD Type 2 transformation notebook source added.
-- [x] Gold analytics table notebook source added.
-- [x] Warehouse SQL views script added.
-- [x] Architecture, data dictionary, lineage, pipeline setup, traceability matrix, and validation checklist added.
+## Runtime evidence completed in the current workspace
 
-### Fabric runtime progress
-- [x] Patient ingestion succeeded: run `20261018T091904061761Z`; 8 pages; 711 records observed.
-- [x] Encounter ingestion succeeded: run `20261018T092508103133Z`; 45 pages; 4,409 records observed.
-- [x] Observation ingestion succeeded: run `20261018T092626225986Z`; 48 pages; 4,707 records observed.
-- [x] Condition ingestion succeeded: run `20261018T092716409380Z`; 20 pages; 1,951 records observed.
-- [x] Bronze/audit/watermark validation passed for all four resources; required metadata fields were non-null in the validation output.
-- [x] Silver notebook executed; current-version uniqueness and validity interval checks passed for all four resources.
-- [x] Gold notebook executed; initial row counts match current Silver counts.
-- [x] Gold data-quality validation passed: zero missing IDs and zero duplicate IDs for all four tables. Field population samples were plausible (Patient gender 584/711; birth date 452/711; Encounter status 4,409/4,409 and patient reference 4,406/4,409; Observation status 4,702/4,707 and code 4,697/4,707; Condition clinical status 1,950/1,951 and code 1,943/1,951).
-- [ ] Demonstrate SCD Type 2 history across separate changed-resource loads.
-- [x] Create Warehouse `wh_fhir_assignment`.
-- [ ] Copy all four Gold tables into `wh_fhir_assignment` and create Warehouse views.
-- [x] Create `pl_fhir_assessment` with six sequential notebook activities (ingestion activities parameterized for each resource → Silver → Gold).
-- [ ] Update activity-linked Fabric notebook code to schema-based table names and execute/validate the full pipeline.
-- [ ] Retain successful run evidence across 2–3 days.
-- [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
+- [x] Microsoft Fabric and Spark environment verified.
+- [x] HAPI FHIR R4 connectivity checked for Patient, Encounter, Observation, and Condition.
+- [x] Pagination tested by following the server-provided `next` link.
+- [x] First-page `_lastUpdated=ge...` filtering tested on all four resource endpoints.
+- [x] Initial ingestion succeeded for all four resources with 121 Raw response pages and 11,778 resource entries observed: Patient 711, Encounter 4,409, Observation 4,707, Condition 1,951.
+- [x] Bronze metadata/audit/watermark validation passed for all four resources.
+- [x] Silver notebook executed and current-row uniqueness / validity-interval checks passed for the first load.
+- [x] Gold notebook executed and key uniqueness / field-population checks passed for the first load.
+- [x] The 12 schema-based Bronze/Silver/Gold copies were exactly compared with original prefixed tables; comparison passed.
+- [x] Warehouse and six-activity pipeline were created in the workspace.
+- [x] Schema-based notebook source, reset utility, validation notebook, view SQL, pipeline guide, data dictionary, and requirement traceability are committed here.
 
-The first ingestion runs observed 11,778 resource entries across 121 Raw response pages. These are current initial-load observations; separate daily incremental runs and demonstrated changed-resource SCD2 history remain pending.
+**Deployment qualification:** The successful first run occurred before the updated schema-based notebook source and reset/startup cells were imported into the existing Fabric notebook items. The schema-based table copies were validated, but the updated clean-start package must still be imported and executed in Fabric. Do not treat a committed notebook as proof that its updated version has run successfully.
 
-**Important:** Source files and documentation are packaged in GitHub. Four resource ingestions, Bronze checks, Silver run/checks, Gold table creation, and Gold key/field population validation have succeeded in Fabric. End-to-end orchestration and Warehouse deployment remain pending.
+## Clean-start quick steps
+
+1. Download this repository ZIP using GitHub's **Code → Download ZIP**.
+2. In `ws_fhir_assessment`, import `notebooks/nb_00_setup_cleanup.ipynb` and attach `lh_fhir_assignment`.
+3. If you want a full clean reset of this dedicated assessment Lakehouse, set `CONFIRM_RESET = "RESET_FHIR_ASSESSMENT"` and `DELETE_RAW_FILES = True`, run the reset notebook exactly once, and confirm it reports reset completed. Its default configuration is dry-run and changes nothing.
+4. Empty `CONFIRM_RESET` and save the reset notebook. **Never add the reset notebook to the pipeline.**
+5. Update/import the notebook sources `nb_01_fhir_ingestion`, `nb_02_silver_scd2`, `nb_03_gold_analytics`, and `nb_04_validation`; attach `lh_fhir_assignment` as each notebook's default Lakehouse. Preserve notebook item names or update the pipeline activity references if you import new items.
+6. In the ingestion notebook, verify its first configuration cell is marked as the Notebook parameter cell.
+7. Run `pl_fhir_assessment`. Activities must run in order: Patient → Encounter → Observation → Condition → Silver SCD Type 2 → Gold tables.
+8. Run `nb_04_validation` and inspect the full result.
+9. In `wh_fhir_assignment`, add the `lh_fhir_assignment` SQL analytics endpoint via **+ Warehouses** and execute `warehouse/create_gold_views.sql`. The views reference Lakehouse Gold tables directly; no duplicate Gold Copy Data activities are needed.
+10. Re-run the pipeline on separate days for the required 2–3-day evidence and validate SCD Type 2 behavior when an updated resource is observed. Keep successful audit/run evidence.
+
+See `notebooks/README.md` and `pipelines/fabric_pipeline_setup.md` for the complete instructions.
 
 ## Architecture
 
@@ -49,13 +54,13 @@ HAPI FHIR R4 API
   Patient → Encounter → Observation → Condition
                    |
                    v
-Raw: original response bodies + metadata sidecars
+Raw: original response bodies + request metadata sidecars
                    |
                    v
 bronze schema: Patient / Encounter / Observation / Condition
                    |
                    v
-silver schema: SCD Type 2 versions / validity intervals
+silver schema: cleaned content versions + SCD Type 2 validity intervals
                    |
                    v
 gold schema: analytics-ready current-state tables
@@ -64,32 +69,23 @@ gold schema: analytics-ready current-state tables
 wh_fhir_assignment: dbo.vw_Patient / vw_Encounter / vw_Observation / vw_Condition
 ```
 
-The Gold data remains in the Lakehouse. Warehouse views reference it directly via same-workspace three-part naming; we do not need to create duplicate Gold tables in the Warehouse. Audit and watermark tables stay in the default `dbo` schema.
-
-## Assignment requirements
-
-Use Spark notebooks to fetch data incrementally over 2–3 days using pagination. Preserve original JSON/XML API responses in date-bucketed, resource-specific Raw folders. Convert responses into Delta/Parquet in Bronze and capture `extraction_timestamp` and `api_url_or_params`. Track when each API is called and when data was saved. Detect changes between daily loads and retain historical versions using SCD Type 2.
-
-Build Raw → Bronze → Silver → Gold. In Silver, clean and deduplicate data using Spark or Dataflows Gen2. Dataflows Gen2 must not be used for JSON-to-table conversion. Gold should provide final warehouse views optimized for reporting and analytics.
-
-Orchestration must run in this order: Patient → Encounter → Observation → Condition, handling transformation, metadata logging and data loading. Code should be modular and reusable, without hardcoding. Submit all code, notebooks, pipeline setup, and clear documentation of pipeline/table relationships via a Git repository link or ZIP.
-
-## Source
-
-HAPI FHIR R4: https://hapi.fhir.org/baseR4/swagger-ui/
+Gold stays in the Lakehouse. Warehouse views read the Gold tables by same-workspace three-part naming. Audit and watermark tables use the `dbo` schema.
 
 ## Repository structure
 
-- `notebooks/` — importable Jupyter notebook files for Fabric (updated source uses schema-based layer names).
-- `warehouse/` — SQL to create final Warehouse views.
-- `docs/` — architecture, data dictionary, requirement traceability, and lineage.
+- `notebooks/` — importable Jupyter notebooks for reset, ingestion, Silver, Gold, and validation.
+- `warehouse/` — SQL statements for final Warehouse views.
+- `docs/` — architecture, data dictionary, requirement traceability, and pipeline/table lineage.
 - `pipelines/` — Fabric Data Pipeline setup runbook.
 - `tests/` — validation queries and acceptance checklist.
-- `src/` — placeholder for reusable modules if needed.
+- `src/` — optional location for additional reusable helpers.
+
+## Assignment coverage
+
+The implementation covers JSON ingestion from the public HAPI FHIR R4 API, pagination, date/resource-bucketed Raw response storage, Bronze Delta tables, required extraction/request metadata, API-call and save timestamps, hash-based change detection, Silver cleaning/deduplication, SCD Type 2 versioning, Gold tables and final Warehouse views, reusable parameterized code, ordered orchestration, and project documentation/submission instructions.
+
+The assignment explicitly calls for separate successful incremental runs over 2–3 days. A single initial three-day lookback does not satisfy that proof. XML ingestion and a one-page Power BI report are optional extensions, deferred until all mandatory checks pass.
 
 ## Data handling
 
-- Do not commit credentials, tokens, secrets, Raw payloads, or extracted datasets.
-- Keep project code and documentation in Git; keep runtime data in the Lakehouse/Warehouse.
-- The initial incremental-filter test checked only the first page for each resource; full pagination and incremental behavior still need end-to-end validation.
-- XML ingestion and a one-page Power BI report are optional extensions after mandatory scope passes.
+Do not commit credentials, tokens, raw FHIR payloads, or extracted datasets to this public repository. The Raw payloads and Delta tables belong in the Fabric Lakehouse; code and documentation belong in Git.
