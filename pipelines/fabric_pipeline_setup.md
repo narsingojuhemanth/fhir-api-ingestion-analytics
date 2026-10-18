@@ -69,7 +69,7 @@ After the Gold tables exist:
 3. Open a new SQL query and run each view definition in `warehouse/create_gold_views.sql`. The statements are separated by `GO`; Fabric's SQL query editor treats `GO` as a new batch.
 4. Validate each view with a small query, for example `SELECT TOP (20) * FROM dbo.vw_Patient;`.
 
-The views are `dbo.vw_Patient`, `dbo.vw_Encounter`, `dbo.vw_Observation`, and `dbo.vw_Condition`.
+The views are `dbo.vw_Patient`, `dbo.vw_Encounter`, `dbo.vw_Observation`, and `dbo.vw_Condition`. If these views already exist and you intentionally want to recreate them, first execute `warehouse/drop_gold_views.sql`; it removes only the views, not Lakehouse data.
 
 ## Required 2–3-day evidence
 
