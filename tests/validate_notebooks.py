@@ -20,10 +20,12 @@ REQUIRED_FILES = [
     "docs/data_dictionary.md",
     "docs/pipeline_table_relationships.md",
     "docs/requirement_traceability.md",
+    "docs/power_bi_model.md",
     "pipelines/fabric_pipeline_setup.md",
     "warehouse/create_gold_views.sql",
     "tests/acceptance_checklist.md",
     "tests/validation_queries.sql",
+    "evidence/README.md",
 ]
 
 errors: list[str] = []
