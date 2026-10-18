@@ -1,0 +1,42 @@
+name: Validate and package project
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate notebook JSON and Python syntax
+        run: python tests/validate_notebooks.py
+
+      - name: Create source ZIP
+        run: |
+          zip -r fhir-api-ingestion-analytics-project.zip . \
+            -x ".git/*" \
+               ".github/*" \
+               "*/.ipynb_checkpoints/*" \
+               "*.parquet" \
+               "*.delta" \
+               "raw/*" \
+               "data/*"
+
+      - name: Publish ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fhir-api-ingestion-analytics-project
+          path: fhir-api-ingestion-analytics-project.zip
+          retention-days: 30
