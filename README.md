@@ -27,18 +27,18 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] Observation ingestion succeeded: run `20261018T092626225986Z`; 48 pages; 4,707 records observed.
 - [x] Condition ingestion succeeded: run `20261018T092716409380Z`; 20 pages; 1,951 records observed.
 - [x] Bronze/audit/watermark validation passed for all four resources; required metadata fields were non-null in the validation output.
-- [x] Silver notebook executed successfully; all four tables passed current-version uniqueness and validity interval checks.
-- [x] Gold notebook executed successfully: Patient 711 rows; Encounter 4,409; Observation 4,707; Condition 1,951.
-- [ ] Validate Gold table keys and column extraction quality.
+- [x] Silver notebook executed; current-version uniqueness and validity interval checks passed for all four resources.
+- [x] Gold notebook executed; initial row counts match current Silver counts.
+- [x] Gold data-quality validation passed: zero missing IDs and zero duplicate IDs for all four tables. Field population samples were plausible (Patient gender 584/711; birth date 452/711; Encounter status 4,409/4,409 and patient reference 4,406/4,409; Observation status 4,702/4,707 and code 4,697/4,707; Condition clinical status 1,950/1,951 and code 1,943/1,951).
 - [ ] Demonstrate SCD Type 2 history across separate changed-resource loads.
 - [ ] Create `wh_fhir_assignment`, copy Gold tables, and create Warehouse views.
 - [ ] Create and run `pl_fhir_assessment` end-to-end.
 - [ ] Retain successful run evidence across 2–3 days.
 - [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
 
-The initial four resource ingestion runs observed 11,778 entries across 121 Raw response pages. The first Gold row counts match their Silver current-row counts. Full end-to-end orchestration, Warehouse deployment, separate daily-run evidence, and a demonstrated changed-resource SCD2 history remain pending.
+The first ingestion runs observed 11,778 resource entries across 121 Raw response pages. These are current initial-load observations; separate daily incremental runs and demonstrated changed-resource SCD2 history remain pending.
 
-**Important:** Source files and documentation are packaged in GitHub. Ingestion, first Bronze checks, Silver run/checks, and initial Gold table creation succeeded in Fabric. Do not mark remaining runtime requirements complete until they are executed and verified.
+**Important:** Source files and documentation are packaged in GitHub. Four resource ingestions, Bronze checks, Silver run/checks, Gold table creation, and Gold key/field population validation have succeeded in Fabric. End-to-end orchestration and Warehouse deployment remain pending.
 
 ## Architecture
 
