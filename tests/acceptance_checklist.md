@@ -2,6 +2,11 @@
 
 Use this checklist for end-to-end validation before submitting.
 
+## Setup / cleanup safety
+- [ ] Run `nb_00_setup_cleanup` only manually if a clean reset is needed; verify the explicit confirmation token before destructive reset.
+- [ ] Never add `nb_00_setup_cleanup` to `pl_fhir_assessment`.
+- [ ] Startup cell only drops legacy prefixed tables when matching schema-based replacement exists.
+
 ## Source/API
 - [ ] HAPI FHIR R4 used.
 - [ ] Patient, Encounter, Observation, and Condition each return successful searchset Bundles.
@@ -40,7 +45,7 @@ Use this checklist for end-to-end validation before submitting.
 - [ ] Silver runs only after all ingestion activities succeed.
 - [ ] Gold runs only after Silver succeeds.
 - [ ] Pipeline/table lineage and runbook documented.
-- [ ] Fabric notebooks exported to `notebooks/`.
+- [ ] Fabric notebook sources `nb_00` through `nb_04` exported/present in `notebooks/`.
 - [ ] GitHub contains code/docs only—no raw payloads or secrets.
 - [ ] ZIP backup exported and verified.
 - [ ] Optional XML and Power BI extensions considered only after mandatory criteria pass.
