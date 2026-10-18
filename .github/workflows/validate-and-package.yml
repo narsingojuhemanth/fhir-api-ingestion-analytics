@@ -23,16 +23,23 @@ jobs:
       - name: Validate notebook JSON and Python syntax
         run: python tests/validate_notebooks.py
 
-      - name: Create source ZIP
+      - name: Create clean source ZIP
         run: |
-          zip -r fhir-api-ingestion-analytics-project.zip . \
-            -x ".git/*" \
-               ".github/*" \
-               "*/.ipynb_checkpoints/*" \
-               "*.parquet" \
-               "*.delta" \
-               "raw/*" \
-               "data/*"
+          mkdir -p package/fhir-api-ingestion-analytics
+          rsync -a \
+            --exclude=".git/" \
+            --exclude=".github/" \
+            --exclude="*.zip" \
+            --exclude="*.parquet" \
+            --exclude="*.delta" \
+            --exclude="raw/" \
+            --exclude="data/" \
+            --exclude="Files/raw/" \
+            --exclude="page_*.json" \
+            --exclude="page_*.metadata.json" \
+            ./ package/fhir-api-ingestion-analytics/
+          cd package
+          zip -qr ../fhir-api-ingestion-analytics-project.zip fhir-api-ingestion-analytics
 
       - name: Publish ZIP artifact
         uses: actions/upload-artifact@v4
