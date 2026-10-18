@@ -33,7 +33,8 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [ ] Demonstrate SCD Type 2 history across separate changed-resource loads.
 - [x] Create Warehouse `wh_fhir_assignment`.
 - [ ] Copy all four Gold tables into `wh_fhir_assignment` and create Warehouse views.
-- [ ] Create and run `pl_fhir_assessment` end-to-end.
+- [x] Create `pl_fhir_assessment` with six sequential notebook activities (ingestion activities parameterized for each resource → Silver → Gold).
+- [ ] Update activity-linked Fabric notebook code to schema-based table names and execute/validate the full pipeline.
 - [ ] Retain successful run evidence across 2–3 days.
 - [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
 
@@ -51,17 +52,19 @@ HAPI FHIR R4 API
 Raw: original response bodies + metadata sidecars
                    |
                    v
-Bronze: Delta tables + content hash + audit + watermark
+bronze schema: Patient / Encounter / Observation / Condition
                    |
                    v
-Silver: clean/deduplicated SCD Type 2 version history
+silver schema: SCD Type 2 versions / validity intervals
                    |
                    v
-Gold: analytics-ready current-state Delta tables
+gold schema: analytics-ready current-state tables
                    |
                    v
-Fabric Warehouse: dbo.vw_gold_* reporting views
+wh_fhir_assignment: dbo.vw_Patient / vw_Encounter / vw_Observation / vw_Condition
 ```
+
+The Gold data remains in the Lakehouse. Warehouse views reference it directly via same-workspace three-part naming; we do not need to create duplicate Gold tables in the Warehouse. Audit and watermark tables stay in the default `dbo` schema.
 
 ## Assignment requirements
 
@@ -77,7 +80,7 @@ HAPI FHIR R4: https://hapi.fhir.org/baseR4/swagger-ui/
 
 ## Repository structure
 
-- `notebooks/` — importable Jupyter notebook files for Fabric.
+- `notebooks/` — importable Jupyter notebook files for Fabric (updated source uses schema-based layer names).
 - `warehouse/` — SQL to create final Warehouse views.
 - `docs/` — architecture, data dictionary, requirement traceability, and lineage.
 - `pipelines/` — Fabric Data Pipeline setup runbook.
