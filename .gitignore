@@ -20,6 +20,9 @@ build/
 # Data and secrets: never commit FHIR payloads or credentials
 raw/
 data/
+Files/raw/
+page_*.json
+page_*.metadata.json
 *.parquet
 *.delta
 *.jsonl
