@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+.env.*
+.python-version
+
+# Notebook checkpoints and local runtime files
+.ipynb_checkpoints/
+*.log
+
+# Local exports / generated artifacts
+dist/
+build/
+*.zip
+
+# Data and secrets: never commit FHIR payloads or credentials
+raw/
+data/
+*.parquet
+*.delta
+*.jsonl
