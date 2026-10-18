@@ -32,7 +32,7 @@ These Jupyter-format notebooks are intended to be imported into the Microsoft Fa
    - `cleanup_legacy_tables = True`
 8. In the pipeline, set the resource type Base parameter for each ingestion activity to Patient, Encounter, Observation, or Condition. The reset notebook must not be linked to the pipeline.
 9. Run the pipeline. It should execute Patient → Encounter → Observation → Condition → Silver → Gold.
-10. Create the Warehouse views using `warehouse/create_gold_views.sql` after the Lakehouse Gold tables exist.
+10. Create the Warehouse views using `warehouse/create_gold_views.sql` after the Lakehouse Gold tables exist. If these views already exist and you intend to recreate them, use `warehouse/drop_gold_views.sql` first in the Warehouse.
 
 ## Updating existing pipeline-linked notebook items
 
