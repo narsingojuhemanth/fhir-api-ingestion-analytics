@@ -22,22 +22,24 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] Architecture, data dictionary, lineage, pipeline setup, traceability matrix, and validation checklist added.
 
 ### Fabric runtime progress
-- [x] Ingestion notebook imported and attached to `lh_fhir_assignment`.
 - [x] Patient ingestion succeeded: run `20261018T091904061761Z`; 8 pages; 711 records observed.
 - [x] Encounter ingestion succeeded: run `20261018T092508103133Z`; 45 pages; 4,409 records observed.
 - [x] Observation ingestion succeeded: run `20261018T092626225986Z`; 48 pages; 4,707 records observed.
 - [x] Condition ingestion succeeded: run `20261018T092716409380Z`; 20 pages; 1,951 records observed.
-- [x] Bronze/audit/watermark validation passed for all four resources; required metadata fields have no nulls and successful audit/run rows and per-resource watermarks were verified.
-- [ ] Run and validate Silver SCD Type 2.
+- [x] Bronze/audit/watermark validation passed for all four resources; required metadata fields have no nulls and successful audit rows/watermarks were verified.
+- [x] Silver notebook executed successfully and created all four Silver tables.
+- [x] Initial Silver row counts match Bronze counts: Patient 711; Encounter 4,409; Observation 4,707; Condition 1,951.
+- [ ] Validate Silver current-row uniqueness and validity intervals.
+- [ ] Prove SCD Type 2 history with multiple observed versions after a changed-resource subsequent load or controlled test.
 - [ ] Run and validate Gold analytics tables.
 - [ ] Create `wh_fhir_assignment`, copy Gold tables, and create Warehouse views.
 - [ ] Create and run `pl_fhir_assessment` end-to-end.
 - [ ] Retain successful run evidence across 2–3 days.
 - [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
 
-The four ingestion runs observed 11,778 resource entries across 121 Raw response pages. Patient is 711, Encounter 4,409, Observation 4,707, Condition 1,951. These are the completed first-run observations; daily incremental runs and SCD2 change history still require validation.
+The first ingestion runs observed 11,778 resource entries across 121 Raw response pages. Initial Silver rebuilds returned one current row per ingested row; SCD2 historical change behavior still requires explicit validation.
 
-**Important:** Notebook source and setup documentation are packaged in GitHub. All four resource ingestions and immediate Bronze/audit/watermark validation passed in Fabric. Full end-to-end validation is still pending.
+**Important:** Notebook source and setup documentation are packaged in GitHub. Four resource ingestions, initial Bronze metadata validation, and Silver notebook execution have succeeded. End-to-end validation is still pending.
 
 ## Architecture
 
