@@ -1,41 +1,43 @@
 # Data Dictionary
 
-## Raw files
+## Raw response files
 
-| Artifact | Meaning |
+| Artifact | Description |
 |---|---|
-| `page_NNNNN.json` | Original successful API response body; do not edit or reserialize it |
-| `page_NNNNN.metadata.json` | Sidecar request, extraction, save, status, and raw-path metadata |
+| `page_NNNNN.json` | Original successful FHIR Bundle response body |
+| `page_NNNNN.metadata.json` | Separate request, extraction, save, HTTP status, count, and Raw path metadata |
 
-Each resource has its own date-bucketed directory.
+Raw directory structure is bucketed by resource type, extraction date, and run ID.
 
-## `dbo.fhir_ingestion_audit`
+## Control tables
+
+### `dbo.fhir_ingestion_audit`
 
 | Column | Meaning |
 |---|---|
-| `run_id` | Unique ingestion run identifier |
+| `run_id` | Unique ingestion run |
 | `resource_type` | Patient, Encounter, Observation, or Condition |
-| `page_number` | 1-based page/attempt number within the run |
-| `api_call_timestamp` | UTC request-start timestamp |
+| `page_number` | Page/attempt sequence within the run |
+| `api_call_timestamp` | UTC time the API request began |
 | `extraction_timestamp` | UTC extraction timestamp |
-| `saved_timestamp` | UTC time after the successful Raw response was written |
-| `api_url_or_params` | Actual URL requested, including pagination URLs |
-| `raw_file_path` | Lakehouse path for the response payload |
-| `metadata_file_path` | Lakehouse path for its sidecar metadata |
-| `http_status` | HTTP status; 0 means no response status was obtained |
-| `records_received` | Number of entries in the returned Bundle |
-| `page_status` | `RAW_SAVED` or failure marker |
-| `run_status` | Overall run status as recorded in the audit row |
-| `error_message` | Error details for failed attempts, when available |
+| `saved_timestamp` | UTC time after the Raw response was saved; null for failed attempt |
+| `api_url_or_params` | Actual requested URL, including paging URLs |
+| `raw_file_path` | Saved response path |
+| `metadata_file_path` | Sidecar file path |
+| `http_status` | HTTP status or 0 when no response status was available |
+| `records_received` | Number of Bundle entries returned |
+| `page_status` | `RAW_SAVED` or `RUN_FAILURE` |
+| `run_status` | `SUCCESS`, `IN_PROGRESS`, or `FAILED` |
+| `error_message` | Failure detail when available |
 
-## `dbo.fhir_ingestion_watermarks`
+### `dbo.fhir_ingestion_watermarks`
 
 | Column | Meaning |
 |---|---|
-| `resource_type` | Resource to which the checkpoint belongs |
-| `last_successful_source_updated_utc` | Maximum observed FHIR resource `meta.lastUpdated`; if a complete successful scan returns zero resources, the run-start timestamp is used as the checkpoint |
-| `last_successful_run_id` | Run that wrote the watermark |
-| `watermark_updated_at_utc` | Time the checkpoint was persisted |
+| `resource_type` | Resource-specific checkpoint |
+| `last_successful_source_updated_utc` | Maximum source `meta.lastUpdated` timestamp observed in a completed run |
+| `last_successful_run_id` | Run that saved the checkpoint |
+| `watermark_updated_at_utc` | UTC timestamp when the watermark was written |
 
 ## Bronze tables
 
@@ -44,33 +46,32 @@ Tables: `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, `bronze.Cond
 | Column | Meaning |
 |---|---|
 | `resource_type`, `resource_id` | FHIR resource identity |
-| `source_last_updated` | Source `meta.lastUpdated` string |
-| `resource_json` | Canonicalized resource JSON string for downstream parsing; Raw file remains the original response |
-| `content_hash` | SHA-256 of canonicalized resource JSON |
-| `extraction_date` | UTC date associated with the extraction run |
-| `extraction_timestamp` | UTC extraction timestamp |
-| `api_url_or_params` | Actual response request URL |
-| `raw_file_path` | Originating Raw Bundle response file |
+| `source_last_updated` | FHIR `meta.lastUpdated` |
+| `resource_json` | Canonical JSON string for downstream parsing |
+| `content_hash` | SHA-256 hash of canonicalized resource JSON |
+| `extraction_date` | UTC date associated with the extraction |
+| `extraction_timestamp` | Time the resource was extracted |
+| `api_url_or_params` | Actual API request URL |
+| `raw_file_path` | Original Bundle response file containing the resource |
 | `ingestion_run_id` | Ingestion run identifier |
-| `saved_timestamp` | Time after the Raw page was saved |
+| `saved_timestamp` | Time after Raw data was saved |
 
-Bronze MERGE key: `resource_type + resource_id + content_hash`. The table retains unique observed content versions while preventing exact re-ingestion duplicates.
+Bronze MERGE key: resource type + resource ID + content hash.
 
 ## Silver tables
 
 Tables: `silver.Patient`, `silver.Encounter`, `silver.Observation`, `silver.Condition`.
 
 Silver retains Bronze columns and adds:
-- `valid_from`: effective timestamp for the observed version.
-- `valid_to`: next observed version's effective timestamp, null for the latest version.
-- `is_current`: true for the latest observed version of a resource.
-- `scd2_rebuilt_timestamp`: UTC time the Silver history was rebuilt.
+- `valid_from`: effective start time of the observed content version.
+- `valid_to`: start time of the next observed version; null for the current version.
+- `is_current`: true only for the latest observed version of a resource.
 
 ## Gold tables
 
 Tables: `gold.Patient`, `gold.Encounter`, `gold.Observation`, `gold.Condition`.
 
-Gold stores current-state analytical projections. See each output schema in `notebooks/nb_03_gold_analytics.ipynb`. Historical rows remain in Silver.
+Gold contains current-state analytic projections with stable resource IDs and commonly used FHIR fields. Historical versions remain in Silver.
 
 ## Warehouse views
 
@@ -79,4 +80,4 @@ Gold stores current-state analytical projections. See each output schema in `not
 - `dbo.vw_Observation`
 - `dbo.vw_Condition`
 
-Create them by running `warehouse/create_gold_views.sql` in `wh_fhir_assignment` after adding the Lakehouse SQL analytics endpoint to the Warehouse explorer. The views reference the Lakehouse Gold tables directly, without copying the Gold data.
+The view definitions are in `warehouse/create_gold_views.sql`.
