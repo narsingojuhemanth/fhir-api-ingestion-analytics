@@ -71,7 +71,7 @@ Silver retains Bronze columns and adds:
 
 Tables: `gold.Patient`, `gold.Encounter`, `gold.Observation`, `gold.Condition`.
 
-Gold contains current-state analytic projections with stable resource IDs and commonly used FHIR fields. Historical versions remain in Silver.
+Gold contains current-state analytic projections with stable resource IDs, commonly used FHIR fields, and the required metadata columns extraction_timestamp and api_url_or_params, plus source_last_updated, content_hash, valid_from, valid_to, is_current, ingestion_run_id, and saved_timestamp. Historical versions remain in Silver.
 
 ## Warehouse views
 
