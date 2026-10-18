@@ -1,74 +1,102 @@
-# Architecture and Design
+# Architecture
 
-## Source
+## Source API
 
 Public HAPI FHIR R4 base URL: https://hapi.fhir.org/baseR4
 
-Required resources: Patient, Encounter, Observation, Condition.
+The solution ingests these resource types: Patient, Encounter, Observation, and Condition. Search responses are FHIR searchset Bundles. Pagination follows the Bundle link with relation `next`; the client does not construct page offsets.
 
-The API returns searchset Bundles. A Bundle can contain multiple resource entries and server-managed pagination links. The ingestion notebook follows the Bundle `link` entry whose relation is `next`; it does not synthesize page offsets.
+## Layers
 
-## Data flow
+### Raw
 
-1. **Raw** — the successful HTTP response body is written to Lakehouse Files as response bytes, without parsing and reserializing the body. A separate sidecar JSON records request and save metadata.
-2. **Bronze** — one Delta table per resource stores each distinct observed resource content version, a canonical JSON representation, SHA-256 content hash, originating Raw response path, extraction metadata, and run ID.
-3. **Silver** — Spark filters malformed rows, deduplicates identical content versions, and builds SCD Type 2 validity intervals from source `meta.lastUpdated` when available.
-4. **Gold** — Spark parses common FHIR fields into analytics-friendly current-state Delta tables.
-5. **Warehouse** — `wh_fhir_assignment` exposes SQL views over Lakehouse Gold tables using same-workspace three-part naming. Gold data stays in the Lakehouse; it is not copied into a second set of Warehouse tables.
-
-## Raw folder structure
+Store each successful HTTP response body as received under:
 
 ```text
-Files/
-  raw/
-    fhir/
-      resource=Patient/
-        extraction_date=YYYY-MM-DD/
-          run_id=YYYYMMDDTHHMMSSffffffZ/
-            page_00001.json
-            page_00001.metadata.json
+Files/raw/fhir/
+  resource=Patient/
+    extraction_date=YYYY-MM-DD/
+      run_id=YYYYMMDDTHHMMSSffffffZ/
+        page_00001.json
+        page_00001.metadata.json
 ```
 
-The same structure applies to Encounter, Observation, and Condition. Raw payloads and sidecar metadata are stored together but in separate files. Do not commit payload data to GitHub.
+Repeat for Encounter, Observation, and Condition. The original response is not parsed and reserialized for Raw storage; page metadata is kept in a separate sidecar file.
 
-## Schemas and tables
+### Bronze
 
-- Bronze: `bronze.Patient`, `bronze.Encounter`, `bronze.Observation`, `bronze.Condition`
-- Silver: `silver.Patient`, `silver.Encounter`, `silver.Observation`, `silver.Condition`
-- Gold: `gold.Patient`, `gold.Encounter`, `gold.Observation`, `gold.Condition`
-- Control: `dbo.fhir_ingestion_audit`, `dbo.fhir_ingestion_watermarks`
+One Delta table per resource, in the Bronze schema:
+- `bronze.Patient`
+- `bronze.Encounter`
+- `bronze.Observation`
+- `bronze.Condition`
+
+Bronze stores resource identity, canonical resource JSON, source update timestamp, content hash, Raw path, extraction timestamp, actual API URL/parameters, ingestion run ID, and save timestamp. A Delta MERGE keyed by resource type, resource ID, and content hash retains each observed content version without duplicating identical payload versions from overlapping incremental scans.
+
+### Silver
+
+One Delta table per resource:
+- `silver.Patient`
+- `silver.Encounter`
+- `silver.Observation`
+- `silver.Condition`
+
+Spark removes malformed records and exact duplicate payload versions. Different hashes for the same resource are retained as separate SCD Type 2 versions, with `valid_from`, `valid_to`, and `is_current`. Source `meta.lastUpdated` is preferred for version time; extraction/save time is the fallback.
+
+### Gold
+
+One current-state analytical Delta table per resource:
+- `gold.Patient`
+- `gold.Encounter`
+- `gold.Observation`
+- `gold.Condition`
+
+Gold extracts commonly used fields from the JSON resource, including Patient demographics, Encounter status/period/subject, Observation code/value/effective time, and Condition status/code/subject.
+
+### Warehouse views
+
+Warehouse `wh_fhir_assignment` exposes four SQL views:
+- `dbo.vw_Patient`
+- `dbo.vw_Encounter`
+- `dbo.vw_Observation`
+- `dbo.vw_Condition`
+
+The views reference Lakehouse Gold tables through same-workspace three-part naming. This meets the Warehouse-view requirement without maintaining a duplicate copy of the Gold data. Microsoft documents this cross-database pattern in its [Fabric Warehouse query guide](https://learn.microsoft.com/en-us/fabric/data-warehouse/query-warehouse).
 
 ## Metadata and audit
 
-- `extraction_timestamp`: time the page request/extraction started in UTC.
-- `api_url_or_params`: actual URL used for that page, including the server-generated next URL when applicable.
-- `api_call_timestamp`: request-start timestamp stored in the page audit table.
-- `saved_timestamp`: timestamp after the Raw response body was written.
-- `source_last_updated`: source FHIR resource `meta.lastUpdated`, used for incremental change detection.
+Control tables stay in the default Lakehouse schema:
+- `dbo.fhir_ingestion_audit`: one row per page or failed page attempt.
+- `dbo.fhir_ingestion_watermarks`: latest successfully observed source timestamp by resource type.
+
+Required metadata:
+- `extraction_timestamp`: time of the API page extraction.
+- `api_url_or_params`: the actual URL requested, including the server-provided paging URL.
+- `api_call_timestamp`: API-call start time.
+- `saved_timestamp`: time after the Raw response was saved.
+- `source_last_updated`: the resource's FHIR `meta.lastUpdated`.
 - `content_hash`: SHA-256 hash of canonicalized resource JSON.
-- `ingestion_run_id`: unique run ID tying page files and resource records together.
+- `ingestion_run_id`: run identifier joining Raw, audit, and Bronze records.
 
-Audit table: `dbo.fhir_ingestion_audit`.
-Watermark table: `dbo.fhir_ingestion_watermarks`, one latest checkpoint per resource type.
+## Incremental behavior
 
-## Incremental strategy
+On a resource's first run, use the configurable lookback (default three days) through `_lastUpdated=ge...`. On later runs, use the saved source watermark minus a configurable overlap (default five minutes). If a run finds no resources with a source update timestamp, retain the existing watermark rather than advancing it without evidence. A failed request, failed load, or pagination safety-limit failure must not be treated as a successful run.
 
-The first run queries a configurable lookback (default 3 days) with FHIR `_lastUpdated=ge...`. After a complete successful scan with valid source timestamps, the notebook persists the maximum observed `meta.lastUpdated` as that resource's watermark. Subsequent scans start from that watermark minus the configured overlap (default 5 minutes). A complete successful scan returning no resources can advance the checkpoint to the run start; a scan returning resources without any source timestamps does not advance it.
+The assessment requires successful ingestion across 2–3 separate days. Run the pipeline on separate days and keep audit/run evidence; the initial lookback alone is not sufficient.
 
-Bronze MERGE keys on resource type, resource ID, and content hash, so overlap does not create duplicate content versions. A pagination safety limit or fetch/parse/load failure must not be treated as a successful run or advance the watermark.
+## Orchestration
 
-**Assessment evidence:** retain successful run IDs and timestamps from separate days across 2–3 days. A single initial three-day lookback does not prove separate daily ingestion runs.
+The Fabric Data Pipeline runs these activities sequentially with On success dependencies:
 
-## SCD Type 2
+1. Ingest Patient
+2. Ingest Encounter
+3. Ingest Observation
+4. Ingest Condition
+5. Transform Silver SCD Type 2
+6. Build Gold tables
 
-Silver is rebuilt deterministically from every distinct content version observed in Bronze. Versions are ordered by source update time with extraction/save time as fallback. `valid_from` is the effective timestamp, `valid_to` is the next observed version timestamp, and `is_current` identifies the latest observed version. A resource that never changes during the observed period naturally has only one version; a change observed on a later run should result in multiple Silver versions.
+Warehouse views are created once from the supplied SQL script and then reflect refreshed Gold tables automatically.
 
-## Startup and reset behavior
+## Transformation constraint
 
-The ingestion notebook's startup cell ensures the layer schemas exist and removes only old prefixed duplicates when the corresponding schema-based replacement is already present. It never deletes current layer tables or Raw files. The standalone `nb_00_setup_cleanup` notebook is destructive only when the explicit reset token is supplied; it is a manual one-time reset utility and must never run in the recurring pipeline.
-
-## Transformations and security
-
-Spark performs JSON extraction and table conversion. Dataflows Gen2 is not used for JSON-to-table conversion.
-
-Do not commit credentials, access tokens, Raw payloads, or extracted datasets. Notebook source and documentation belong in Git; runtime data belongs in the Fabric Lakehouse/Warehouse.
+Spark notebooks parse JSON into tables. Dataflows Gen2 is not used for JSON-to-table conversion.
