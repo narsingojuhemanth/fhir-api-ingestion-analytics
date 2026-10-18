@@ -24,10 +24,11 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 ### Fabric runtime progress
 - [x] Ingestion notebook imported and attached to `lh_fhir_assignment`.
 - [x] Patient ingestion succeeded: run `20261018T091904061761Z`; 8 pages; 711 resource records observed.
-- [x] Patient Bronze validation passed: 711 rows and 711 distinct IDs; zero missing resource IDs, JSON, hashes, extraction timestamps, request URLs, or save timestamps.
-- [x] Patient audit validation passed: 8 page rows, each HTTP 200, RAW_SAVED, SUCCESS.
-- [x] Patient source watermark was persisted.
-- [ ] Run and validate ingestion for Encounter, Observation, and Condition.
+- [x] Patient Bronze, audit, and watermark validation passed: 711 Bronze rows and distinct IDs; required metadata had no nulls; 8 audited pages returned HTTP 200 and SUCCESS.
+- [x] Encounter ingestion succeeded: run `20261018T092508103133Z`; 45 pages; 4,409 resources observed.
+- [x] Observation ingestion succeeded: run `20261018T092626225986Z`; 48 pages; 4,707 resources observed.
+- [x] Condition ingestion succeeded: run `20261018T092716409380Z`; 20 pages; 1,951 resources observed.
+- [ ] Validate persisted Bronze metadata, audit rows, and watermarks for Encounter, Observation, and Condition.
 - [ ] Run and validate Silver SCD Type 2.
 - [ ] Run and validate Gold analytics tables.
 - [ ] Create `wh_fhir_assignment`, copy Gold tables, and create Warehouse views.
@@ -35,7 +36,9 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [ ] Retain successful run evidence across 2–3 days.
 - [ ] Export final Fabric notebook source, create ZIP backup, and verify submission package.
 
-**Important:** Notebook source and setup documentation are packaged in GitHub. Patient ingestion and its immediate metadata checks passed in Fabric. The full end-to-end implementation has not yet been executed or validated; do not mark remaining runtime requirements complete until those checks pass.
+The first four resource ingestion runs total **11,778 resource entries observed** (711 Patient + 4,409 Encounter + 4,707 Observation + 1,951 Condition) across **121 Raw response pages**. These are counts observed from the notebook outputs, not yet an independent end-to-end count reconciliation. Patient table metadata/audit validation passed. The other three ingestion outputs succeeded, but their persisted table details still need validation.
+
+**Important:** Source code and setup documentation are packaged in GitHub. Ingestion succeeded for all four resources in Fabric. The full end-to-end implementation has not yet been executed or validated; do not mark remaining runtime requirements complete until those checks pass.
 
 ## Architecture
 
@@ -61,7 +64,7 @@ Fabric Warehouse: dbo.vw_gold_* reporting views
 
 ## Assignment requirements
 
-Use Spark notebooks to fetch data incrementally over 2–3 days using pagination. Preserve original JSON/XML API responses in date-bucketed, resource-specific Raw folders. Convert responses into Delta/Parquet in Bronze and capture `extraction_timestamp` and `api_url_or_params`. Track when each API is called and when data is saved. Detect changes between daily loads and retain historical versions using SCD Type 2.
+Use Spark notebooks to fetch data incrementally over 2–3 days using pagination. Preserve original JSON/XML API responses in date-bucketed, resource-specific Raw folders. Convert responses into Delta/Parquet in Bronze and capture `extraction_timestamp` and `api_url_or_params`. Track when each API is called and when data was saved. Detect changes between daily loads and retain historical versions using SCD Type 2.
 
 Build Raw → Bronze → Silver → Gold. In Silver, clean and deduplicate data using Spark or Dataflows Gen2. Dataflows Gen2 must not be used for JSON-to-table conversion. Gold should provide final warehouse views optimized for reporting and analytics.
 
