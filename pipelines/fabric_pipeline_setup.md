@@ -34,23 +34,13 @@ Create a Fabric Data Pipeline named `pl_fhir_assessment`. Add Notebook activitie
 
 Link them sequentially with success dependencies through `Build_Gold_Tables`. If using pipeline parameters for page size, lookback, overlap, and safety limit, create them at the pipeline level and pass them as Base parameters to all four ingestion activity instances. Resource names are fixed per activity to preserve the assignment-required sequence; the ingestion logic itself is reusable.
 
-## Copy Gold tables into the Warehouse
+## Create Warehouse views over Gold
 
-After `Build_Gold_Tables`, add four Copy Data activities. For each activity:
-- Source connection: Lakehouse `lh_fhir_assignment`
-- Source table: corresponding `gold_fhir_*` table
-- Destination connection: Warehouse `wh_fhir_assignment`
-- Destination table: same table name under `dbo` (for example, `dbo.gold_fhir_patient`)
-- Use overwrite/replace for this current-state Gold snapshot.
-- Import source schema and validate mapping, especially Boolean and timestamp types.
-
-The four copies may run in parallel after the Gold notebook succeeds.
+No Gold Copy Data activities are needed. The data remains in Lakehouse schema `gold`; the Warehouse provides SQL views over it.
 
 ## Create the SQL views
 
-After the first successful copy, open the SQL query editor on `wh_fhir_assignment` and execute `warehouse/create_gold_views.sql`. This creates `dbo.vw_gold_patient`, `dbo.vw_gold_encounter`, `dbo.vw_gold_observation`, and `dbo.vw_gold_condition`.
-
-If your tenant supports a Warehouse Script activity, add it after all four copies and configure it to run the SQL script. Otherwise, the views can be created manually after the first copy; the data pipeline still orchestrates all ingestion and transformation steps.
+In `wh_fhir_assignment`, add the Lakehouse SQL analytics endpoint `lh_fhir_assignment` using the SQL editor's **+ Warehouses** action, then execute `warehouse/create_gold_views.sql`. This creates `dbo.vw_Patient`, `dbo.vw_Encounter`, `dbo.vw_Observation`, and `dbo.vw_Condition`. The view script is a one-time deployment step; no copy activity is required.
 
 ## Executing the 2–3-day requirement
 
