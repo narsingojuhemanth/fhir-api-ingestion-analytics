@@ -184,13 +184,11 @@ The validation output returned `OVERALL: PASS`. At the captured run, the resourc
 
 ![Validation output](evidence/03-validation-pass.webp)
 
-### Ingestion audit and run history
+### Run history
 
-![Ingestion audit details](evidence/04-ingestion-audit.webp)
+The validation output above includes the audit table and four resource watermarks. The run-history screenshot shows three successful pipeline runs on **18 October 2026**. These prove repeated successful execution on that date; they do **not** prove runs on three separate calendar days.
 
 ![Recent pipeline runs](evidence/05-recent-runs.webp)
-
-The run-history screenshot shows three successful pipeline runs on **18 October 2026**. These prove repeated successful execution on that date; they do **not** prove runs on three separate calendar days.
 
 ### Warehouse views
 
