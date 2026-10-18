@@ -16,11 +16,12 @@ These Jupyter-format notebooks are intended to be imported into the Microsoft Fa
 2. Import `nb_00_setup_cleanup.ipynb` and attach the Lakehouse.
 3. To perform a full reset of this assessment's data, edit the parameter cell: set `CONFIRM_RESET = "RESET_FHIR_ASSESSMENT"` and `DELETE_RAW_FILES = True`. Run the notebook once and verify it reports reset completed. If you do not need to remove existing Raw files, set `DELETE_RAW_FILES = False`.
 4. After reset, empty `CONFIRM_RESET` and save the cleanup notebook so it is safe if reopened. Do not include it in the pipeline.
-5. Import or update the three production notebooks, keeping these item names:
+5. Import or update the existing Fabric notebook items in place where possible, keeping these item names so the pipeline links continue to work:
    - `nb_01_fhir_ingestion`
    - `nb_02_silver_scd2`
    - `nb_03_gold_analytics`
-6. Attach `lh_fhir_assignment` as the default Lakehouse for all three.
+   - `nb_04_validation`
+6. Attach `lh_fhir_assignment` as the default Lakehouse for all four notebooks. If the notebooks are imported as new items, update the pipeline activity references to use the new ingestion, Silver, and Gold item IDs.
 7. Keep the parameter cell in `nb_01_fhir_ingestion` marked as the notebook parameter cell. Default values are:
    - `resource_type = "Patient"`
    - `initial_lookback_days = 3`
