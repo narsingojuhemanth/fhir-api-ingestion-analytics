@@ -33,7 +33,7 @@ Each resource has its own date-bucketed directory.
 | Column | Meaning |
 |---|---|
 | `resource_type` | Resource to which the checkpoint belongs |
-| `last_successful_source_updated_utc` | Maximum observed FHIR resource `meta.lastUpdated` from the completed run |
+| `last_successful_source_updated_utc` | Maximum observed FHIR resource `meta.lastUpdated`; if a complete successful scan returns zero resources, the run-start timestamp is used as the checkpoint |
 | `last_successful_run_id` | Run that wrote the watermark |
 | `watermark_updated_at_utc` | Time the checkpoint was persisted |
 
