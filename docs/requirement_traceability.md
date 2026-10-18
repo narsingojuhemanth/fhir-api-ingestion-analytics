@@ -1,35 +1,30 @@
-# Assignment Requirement Traceability
+# Assignment requirement mapping
 
-This matrix follows the wording of the supplied three-page FHIR API Data Ingestion & Analytics Assignment.
-
-| Requirement from assignment | Project implementation | Final deployment evidence to collect |
+| Assignment requirement | Implementation | Evidence |
 |---|---|---|
-| Access to Fabric or Databricks | Microsoft Fabric workspace and schema-enabled Lakehouse | Workspace/Lakehouse exist |
-| Use public HAPI FHIR R4 API | Ingestion notebook calls the public baseR4 endpoints | Successful HTTP responses for all resources |
-| Ingest Patient, Encounter, Observation, Condition | Same parameterized ingestion notebook, called once per resource in pipeline | Audit shows successful runs for all four resource types |
-| Fetch incrementally for 2–3 days using pagination | Initial three-day lookback, persisted source watermark, overlap, server-provided next links | Successful pipeline runs on separate days and page/audit evidence |
-| Store JSON response as-is in Lakehouse | Original response bytes saved under Raw; metadata is in separate sidecar | Raw files exist by resource/date/run |
-| Convert API responses into Delta/Parquet in Bronze | One schema-based Bronze Delta table per resource | Four Bronze tables and counts |
-| Add extraction_timestamp and api_url_or_params | Both columns in Bronze and page metadata/audit | No null metadata values for successfully ingested resources |
-| Track when each API was called and when data was saved | Audit table and sidecar timestamps | Audit rows include call and save times |
-| Detect daily changes and preserve history with SCD Type 2 | Content hashes in Bronze; version history in Silver with valid_from, valid_to, is_current | Changed resource across runs has multiple Silver versions; exactly one is current |
-| Raw responses bucketed by date with folders for API objects | Resource/extraction-date/run-ID folder structure | Inspect Raw folders |
-| Silver cleaning and deduplication | Spark transformations in Silver notebook | Silver current-row and interval validation |
-| Dataflows Gen2 only for transformations, not JSON conversion | Spark performs JSON-to-table conversion; no Dataflows Gen2 used for parsing | Review notebook implementation |
-| Gold final Warehouse views optimized for reporting | Gold Delta tables plus Warehouse SQL views over Gold | Query all four Warehouse views |
-| Orchestrate Patient → Encounter → Observation → Condition | Six-stage Fabric Data Pipeline, with those four calls first | Pipeline dependency order and successful run |
-| Handle transformation, metadata logging, and data loading | Ingestion audit/watermark logging and Silver/Gold notebook stages | Pipeline run history and control tables |
-| Modular reusable code with no hardcoding | Parameterized ingestion notebook reused for all four resources | Four activity parameter settings |
-| Submit code, notebooks, pipeline setup | This repository | Repository link or ZIP |
-| Document pipeline and table relationships | Architecture, data dictionary, lineage, pipeline runbook | Check files under docs/ and pipelines/ |
+| Use Microsoft Fabric or Databricks with source control | Fabric notebooks, pipeline, SQL, and documentation are in this repository | Repository and workspace |
+| Use public HAPI FHIR R4 | Ingestion calls the HAPI R4 base URL | Audit rows for all four resources |
+| Ingest Patient, Encounter, Observation, and Condition | One parameterized notebook is called once per resource | Pipeline configuration and run history |
+| Incremental ingestion with pagination | Watermarks, overlap, and server-provided `next` URLs | Audit log, Raw folders, and actual run history |
+| Preserve original JSON responses | Successful Bundle response bodies are saved unchanged; metadata is in separate sidecars | Raw files by resource, date, and run |
+| Store Bronze data in Delta/Parquet | Four schema-based Bronze Delta tables | Bronze table inspection and counts |
+| Record extraction and request details | `extraction_timestamp`, `api_url_or_params`, API-call and save timestamps | Bronze metadata, audit rows, and sidecars |
+| Retain changes with SCD Type 2 | Bronze content hashes and Silver version intervals | Silver rows with `valid_from`, `valid_to`, `is_current` |
+| Clean and deduplicate data | Spark transformations build Silver from Bronze | Validation notebook and SQL checks |
+| Build Gold reporting tables | Four analytical Gold Delta tables | Gold table inspection and counts |
+| Publish Warehouse views | Four views reference current Gold rows | Execute the SQL in `warehouse/create_gold_views.sql` |
+| Run activities in the requested order | Patient → Encounter → Observation → Condition → Silver → Gold | Pipeline dependency view and successful run |
+| Keep code modular and reusable | A parameterized ingestion notebook is reused for all resources | Pipeline parameter settings |
+| Document pipeline and table relationships | Architecture, data dictionary, lineage, pipeline and Power BI model guides | Files under `docs/` and `pipelines/` |
+| Submit code and setup material | Notebooks, SQL, validation, and setup documentation | This repository |
 
-## Optional extensions (not part of required scope)
+## Power BI report
 
-- XML ingestion in addition to JSON.
-- One-page Power BI report sourced from Gold.
+The Power BI semantic model uses the four Warehouse views. The Patient key relates one-to-many to the patient key in Encounter, Observation, and Condition. The report is an additional deliverable; see [the model guide](power_bi_model.md) and screenshots in `evidence/` when available.
 
-These remain optional and should not delay the mandatory requirements.
+## Optional assignment extensions
 
-## Acceptance condition
+- XML ingestion.
+- One-page Power BI report.
 
-Source code in GitHub is not proof of runtime success. Execute the updated notebooks in the new Fabric workspace, capture the pipeline and table validation output, retain successful run evidence across 2–3 days, and demonstrate historical versions when changed source content is observed.
+The Power BI report has been created in the Fabric workspace. Only claim runtime behavior that is supported by actual notebook, pipeline, or report evidence. The required 2–3 separate-day ingestion evidence should use the actual run dates; multiple runs on one date are not separate-day evidence.
