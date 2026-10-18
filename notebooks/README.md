@@ -8,6 +8,7 @@ These Jupyter-format notebooks are intended to be imported into the Microsoft Fa
 2. `nb_01_fhir_ingestion.ipynb` — parameterized Raw/Bronze ingestion for one resource per pipeline activity. The first startup cell creates the `bronze`, `silver`, and `gold` schemas and only drops legacy prefixed duplicate tables when the corresponding schema-based replacement exists. It does not drop active layer tables, audit/watermark tables, or Raw files.
 3. `nb_02_silver_scd2.ipynb` — Spark cleanup/deduplication and SCD Type 2 reconstruction for all four Bronze tables.
 4. `nb_03_gold_analytics.ipynb` — current-state analytics Gold Delta tables for all four resources.
+5. `nb_04_validation.ipynb` — read-only cross-layer data quality checks and summary evidence.
 
 ## Safe clean-start instructions
 
