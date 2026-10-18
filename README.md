@@ -8,8 +8,10 @@ Assessment project using Microsoft Fabric and the public HAPI FHIR R4 API.
 - [x] Workspace created: `ws_fhir_assessment`
 - [x] Lakehouse created: `lh_fhir_assignment`
 - [x] Spark notebook created: `nb_01_fhir_ingestion`
-- [x] Spark environment smoke test passed
-- [ ] FHIR API ingestion for Patient, Encounter, Observation, Condition
+- [x] Spark environment smoke test passed (Spark 4.1.1.5.5.20260930.238388267)
+- [x] GitHub repository created and project scaffold committed
+- [ ] FHIR API behavior and pagination understood and validated
+- [ ] Reusable ingestion for Patient, Encounter, Observation, Condition
 - [ ] Raw and Bronze layers
 - [ ] Incremental ingestion and SCD Type 2 history
 - [ ] Silver and Gold layers
@@ -26,13 +28,13 @@ The orchestration must run in this order: Patient → Encounter → Observation 
 
 HAPI FHIR R4: https://hapi.fhir.org/baseR4/swagger-ui/
 
-## Planned project structure
+## Project structure
 
 ```text
-docs/                 # Architecture, data dictionary, pipeline/table relationships, runbook
+docs/                 # Architecture, data dictionary, pipeline relationships, runbook
 notebooks/            # Exported Fabric notebook source
 src/                  # Reusable ingestion and transformation modules, where applicable
-pipelines/            # Pipeline configuration and recreation instructions
+pipelines/            # Pipeline setup and recreation instructions
 tests/                # Validation queries and test evidence
 ```
 
